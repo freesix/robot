@@ -130,7 +130,7 @@ def generate_launch_description():
             condition=IfCondition(use_namespace),
             namespace=namespace),
 
-        Node(
+        Node( # 顶层的components节点，对包含的slam、locatlization、navigation作用，要用components节点，必须启用此节点
             condition=IfCondition(use_composition),
             name='nav2_container',
             package='rclcpp_components',
@@ -152,7 +152,7 @@ def generate_launch_description():
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(os.path.join(launch_dir,
                                                        'localization_launch.py')),
-            condition=IfCondition(PythonExpression(['not ', slam])),
+            condition=IfCondition(PythonExpression(['not ', slam])),  # 不使用slam定位，则用此处的acml
             launch_arguments={'namespace': namespace,
                               'map': map_yaml_file,
                               'use_sim_time': use_sim_time,

@@ -17,7 +17,7 @@ def generate_launch_description():
             ),
         DeclareLaunchArgument(
             'dev',
-            default_value='/dev/ttyUSB1', 
+            default_value='/dev/ttyUSB0', 
             ),
         
         # 启动 imu_publisher 节点，并传入 topic_name 参数

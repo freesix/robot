@@ -166,7 +166,7 @@ public:
       std::bind(&Navigator::onGoalReceived, this, std::placeholders::_1),
       std::bind(&Navigator::onLoop, this),
       std::bind(&Navigator::onPreempt, this, std::placeholders::_1),
-      std::bind(&Navigator::onCompleetion, this, std::placeholders::_1, std::placeholders::_2));
+      std::bind(&Navigator::onCompletion, this, std::placeholders::_1, std::placeholders::_2));
 
     bool ok = true;
     if (!bt_action_server_->on_configure()) {

@@ -188,7 +188,7 @@ def generate_launch_description():
                 output='screen',
                 arguments=['--ros-args', '--log-level', log_level],
                 parameters=[{'use_sim_time': use_sim_time},
-                            {'autostart': autostart},
+                            {'autostart': autostart}, # 在启动时必须启动生命周期管理器
                             {'node_names': lifecycle_nodes}]),
         ]
     )

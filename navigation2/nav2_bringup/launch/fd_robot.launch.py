@@ -1,21 +1,4 @@
-# Copyright (c) 2018 Intel Corporation
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
-"""This is all-in-one launch script intended for use by nav2 developers."""
-
 import os
-
 from ament_index_python.packages import get_package_share_directory
 
 from launch import LaunchDescription
@@ -169,7 +152,7 @@ def generate_launch_description():
         cmd=['gzclient'],
         cwd=[launch_dir], output='screen')
 
-    urdf = os.path.join(bringup_dir, 'urdf', 'turtlebot3_waffle.urdf')
+    urdf = os.path.join(bringup_dir, 'urdf', 'fd_base.urdf')
     with open(urdf, 'r') as infp:
         robot_description = infp.read()
 
@@ -184,7 +167,7 @@ def generate_launch_description():
                      'robot_description': robot_description}],
         remappings=remappings)
 
-    start_gazebo_spawner_cmd = Node(
+    """ start_gazebo_spawner_cmd = Node(
         package='gazebo_ros',
         executable='spawn_entity.py',
         output='screen',
@@ -193,7 +176,7 @@ def generate_launch_description():
             '-file', robot_sdf,
             '-robot_namespace', namespace,
             '-x', pose['x'], '-y', pose['y'], '-z', pose['z'],
-            '-R', pose['R'], '-P', pose['P'], '-Y', pose['Y']])
+            '-R', pose['R'], '-P', pose['P'], '-Y', pose['Y']]) """
 
     rviz_cmd = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
@@ -242,7 +225,7 @@ def generate_launch_description():
     # Add any conditioned actions
     ld.add_action(start_gazebo_server_cmd)
     ld.add_action(start_gazebo_client_cmd)
-    ld.add_action(start_gazebo_spawner_cmd)
+    # ld.add_action(start_gazebo_spawner_cmd)
 
     # Add the actions to launch all of the navigation nodes
     ld.add_action(start_robot_state_publisher_cmd)

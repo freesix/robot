@@ -1,39 +1,39 @@
 amcl:
   ros__parameters:
     use_sim_time: True
-    alpha1: 0.2
-    alpha2: 0.2
-    alpha3: 0.2
-    alpha4: 0.2
-    alpha5: 0.2
+    alpha1: 0.2 # 机器人里程计的旋转噪声
+    alpha2: 0.2 # 机器人平移分量中的旋转噪声
+    alpha3: 0.2 # 机器人里程计的平移噪声
+    alpha4: 0.2 # 机器人旋转过程中的平移噪声(斜角方向上的运动噪声)
+    alpha5: 0.2 # 适用于全向式的平移噪声
     base_frame_id: "base_footprint"
-    beam_skip_distance: 0.5
-    beam_skip_error_threshold: 0.9
+    beam_skip_distance: 0.5 # 设置忽略掉似然场中大多数粒子与地图不一致的光束(表示最大忽略的距离)
+    beam_skip_error_threshold: 0.9 
     beam_skip_threshold: 0.3
     do_beamskip: false
     global_frame_id: "map"
-    lambda_short: 0.1
-    laser_likelihood_max_dist: 2.0
+    lambda_short: 0.1 # 模型z_short部分的指数衰减参数
+    laser_likelihood_max_dist: 2.0 # 在地图上进行障碍物膨胀的最大距离，用于似然场模型
     laser_max_range: 100.0
     laser_min_range: -1.0
-    laser_model_type: "likelihood_field"
+    laser_model_type: "likelihood_field" # 使用哪个模型(beam、likelihood_field、likelihood_field_prob)
     max_beams: 60
-    max_particles: 2000
-    min_particles: 500
+    max_particles: 2000 # 允许的最大粒子数
+    min_particles: 500 # 允许的最小粒子数
     odom_frame_id: "odom"
-    pf_err: 0.05
-    pf_z: 0.99
-    recovery_alpha_fast: 0.0
-    recovery_alpha_slow: 0.0
-    resample_interval: 1
+    pf_err: 0.05 # 粒子过滤器总体误差
+    pf_z: 0.99 # 粒子过滤器总体误差
+    recovery_alpha_fast: 0.0 # 快速平均权重滤波器的指数衰减率
+    recovery_alpha_slow: 0.0 # 慢速平均权重滤波器的指数衰减率(决定何时通过添加随机姿态来恢复)
+    resample_interval: 1 # 重采样前所需过滤器更新数
     robot_model_type: "nav2_amcl::DifferentialMotionModel"
-    save_pose_rate: 0.5
-    sigma_hit: 0.2
+    save_pose_rate: 0.5 # 估计的姿态和协方差存储到参数服务器的最大速率
+    sigma_hit: 0.2 # 设置模型z_hit部分中使用的高斯模型标准差
     tf_broadcast: true
     transform_tolerance: 1.0
-    update_min_a: 0.2
-    update_min_d: 0.25
-    z_hit: 0.5
+    update_min_a: 0.2 # 执行过滤器更新之前的需要进行的旋转
+    update_min_d: 0.25 # 执行过滤器更新之前需要的平移移动
+    z_hit: 0.5 # 模型中z_hit部分的混合权重，所有使用的z权重之和必须为1，光束模型使用4个z权重，而似然场模型使用z_hit和z_rand权重
     z_max: 0.05
     z_rand: 0.5
     z_short: 0.05
@@ -254,7 +254,7 @@ global_costmap:
         map_subscribe_transient_local: True
       inflation_layer: # 膨胀层，它的实现是直接操纵在静态地图层上的，没有独立地图层
         plugin: "nav2_costmap_2d::InflationLayer" # 膨胀层插件
-        cost_scaling_factor: 3.0a # 膨胀因子，控制膨胀层权重衰减因子
+        cost_scaling_factor: 3.0 # 膨胀因子，控制膨胀层权重衰减因子
         inflation_radius: 0.55 # 膨胀层半径
       always_send_full_costmap: True # 是否发送整张地图
 
