@@ -10,7 +10,8 @@ import os
 
 def generate_launch_description():
     ## ***** Launch arguments *****
-    bag_filename_arg = DeclareLaunchArgument('bag_filename')
+    load_state_filename_arg = DeclareLaunchArgument('load_state_filename',
+        default_value='/home/tl/ament_ws/mymap.pbstream')
 
   ## ***** File paths ******
     pkg_share = FindPackageShare('cartographer_ros').find('cartographer_ros')
@@ -35,41 +36,18 @@ def generate_launch_description():
         parameters = [{'use_sim_time': False}],
         arguments = [
             '-configuration_directory', FindPackageShare('cartographer_ros').find('cartographer_ros') + '/configuration_files',
-            '-configuration_basename', 'fd.lua'],
+            '-configuration_basename', 'fd_localization.lua',
+            '-load_state_filename', LaunchConfiguration('load_state_filename')],
         remappings = [
             ('scan', '/laser/data'),
             ('imu', '/imu/data')],
         output = 'screen'
         )
 
-    cartographer_occupancy_grid_node = Node(
-        package = 'cartographer_ros',
-        executable = 'cartographer_occupancy_grid_node',
-        parameters = [
-            {'use_sim_time': False},
-            {'resolution': 0.05}],
-        )
-
-    rviz_node = Node(
-        package = 'rviz2',
-        executable = 'rviz2',
-        on_exit = Shutdown(),
-        arguments = ['-d', FindPackageShare('cartographer_ros').find('cartographer_ros') + '/configuration_files/demo_2d.rviz'],
-        parameters = [{'use_sim_time': False}],
-    )
-
-    ros2_bag_play_cmd = ExecuteProcess(
-        cmd = ['ros2', 'bag', 'play', LaunchConfiguration('bag_filename'), '--clock'],
-        name = 'rosbag_play',
-    )
-
     return LaunchDescription([
         # Launch arguments
-        # bag_filename_arg,
+        load_state_filename_arg,
         # Nodes
         robot_state_publisher_node,
         cartographer_node,
-        cartographer_occupancy_grid_node,
-        rviz_node,
-        # ros2_bag_play_cmd
     ])

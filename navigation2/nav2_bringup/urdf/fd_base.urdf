@@ -1,12 +1,10 @@
 <robot name="cartographer_fd_base">
-
-  <link name="base_footprint"/>
-
-  <joint name="base_joint" type="fixed">
-    <parent link="base_footprint"/>
-    <child link="base_link" />
-    <origin xyz="0 0 0.010" rpy="0 0 0"/>
-  </joint>
+  <material name="orange">
+    <color rgba="1.0 0.5 0.2 1" />
+  </material>
+  <material name="gray">
+    <color rgba="0.2 0.2 0.2 1" />
+  </material>
 
   <link name="imu_link">
     <visual>
@@ -17,3 +15,30 @@
       <material name="orange" />
     </visual>
   </link>
+
+  <link name="laser_link">
+    <visual>
+      <origin xyz="0 0 0" />
+      <geometry>
+        <cylinder length="0.05" radius="0.03" />
+      </geometry>
+      <material name="gray" />
+    </visual>
+  </link>
+
+  
+  <link name="base_link" />
+
+  <joint name="imu_link_joint" type="fixed">
+    <parent link="base_link" />
+    <child link="imu_link" />
+    <origin xyz="0.15 0 0.02" rpy="0 0 -1.57"/>
+  </joint>
+
+  <joint name="laser_link_joint" type="fixed">
+    <parent link="base_link" />
+    <child link="laser_link" />
+    <origin xyz="0.15 0 0.0558" rpy="0 0 1.57" />
+  </joint>
+
+ </robot>

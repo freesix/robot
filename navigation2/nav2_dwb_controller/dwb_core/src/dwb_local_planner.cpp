@@ -358,9 +358,10 @@ DWBLocalPlanner::coreScoringAlgorithm(
   while (traj_generator_->hasMoreTwists()) { // 遍历每个路径
     twist = traj_generator_->nextTwist();
     traj = traj_generator_->generateTrajectory(pose, velocity, twist);
-
+    RCLCPP_ERROR(rclcpp::get_logger("DWBLocalPlanner"), "%s", "222222222222222");
     try {
       dwb_msgs::msg::TrajectoryScore score = scoreTrajectory(traj, best.total); // 计算路径得分
+      RCLCPP_ERROR(rclcpp::get_logger("DWBLocalPlanner"), "this is 111111111 score %f", score.total);
       tracker.addLegalTrajectory();
       if (results) {
         results->twists.push_back(score);
@@ -396,6 +397,7 @@ DWBLocalPlanner::coreScoringAlgorithm(
   if (best.total < 0) {
     if (debug_trajectory_details_) {
       RCLCPP_ERROR(rclcpp::get_logger("DWBLocalPlanner"), "%s", tracker.getMessage().c_str());
+      RCLCPP_ERROR(rclcpp::get_logger("DWBLocalPlanner"), "The best.total======== %f", best.total);
       for (auto const & x : tracker.getPercentages()) {
         RCLCPP_ERROR(
           rclcpp::get_logger(
