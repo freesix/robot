@@ -1,0 +1,16 @@
+std_msgs/Header header 
+int32 timeticks
+uint32 crc32
+float64 gyro_x
+float64 gyro_y
+float64 gyro_z
+float64 accel_x
+float64 accel_y
+float64 accel_z
+float64 magn_x 
+float64 magn_y
+float64 magn_z 
+float64 quaternion_x
+float64 quaternion_y
+float64 quaternion_z
+float64 quaternion_w

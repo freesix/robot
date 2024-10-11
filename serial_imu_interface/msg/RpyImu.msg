@@ -1,0 +1,10 @@
+std_msgs/Header header 
+int32 timeticks 
+uint32 crc32
+float64 pitch 
+float64 roll
+float64 yaw
+float64 quaternion_x
+float64 quaternion_y
+float64 quaternion_z
+float64 quaternion_w
