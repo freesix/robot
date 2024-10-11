@@ -477,35 +477,35 @@ ObstacleLayer::updateBounds(
         (px -
         obs.origin_.x) * (px - obs.origin_.x) + (py - obs.origin_.y) * (py - obs.origin_.y) +
         (pz - obs.origin_.z) * (pz - obs.origin_.z);
-
+      // 这点太远，舍弃
       // if the point is far enough away... we won't consider it
       if (sq_dist >= sq_obstacle_max_range) {
         RCLCPP_DEBUG(logger_, "The point is too far away");
         continue;
       }
-
+      // 这点太近，舍弃
       // if the point is too close, do not conisder it
       if (sq_dist < sq_obstacle_min_range) {
         RCLCPP_DEBUG(logger_, "The point is too close");
         continue;
       }
-
-      // now we need to compute the map coordinates for the observation
+      /********** 将符合的障碍物点在costmap中标记 ***************/
+      // now we need to compute the map coordinates for the observation // 世界坐标系到地图坐标系
       unsigned int mx, my;
       if (!worldToMap(px, py, mx, my)) {
         RCLCPP_DEBUG(logger_, "Computing map coords failed");
         continue;
       }
-
+      // 地图坐标转换到序号，因为costmap中索引是按每个像素点序列来存储的
       unsigned int index = getIndex(mx, my);
-      costmap_[index] = LETHAL_OBSTACLE;
-      touch(px, py, min_x, min_y, max_x, max_y);
+      costmap_[index] = LETHAL_OBSTACLE; // costmap对应序号设置为致命障碍物标记
+      touch(px, py, min_x, min_y, max_x, max_y); // 更新边界，边界指最大障碍物边界，每加入一个点就更新一次
     }
   }
-
+  // 更新脚印，并根据脚印更新边界
   updateFootprint(robot_x, robot_y, robot_yaw, min_x, min_y, max_x, max_y);
 }
-
+// 更新脚印和更新边界范围
 void
 ObstacleLayer::updateFootprint(
   double robot_x, double robot_y, double robot_yaw,
@@ -520,7 +520,7 @@ ObstacleLayer::updateFootprint(
     touch(transformed_footprint_[i].x, transformed_footprint_[i].y, min_x, min_y, max_x, max_y);
   }
 }
-
+// 将障碍物层更新到master代价地图层
 void
 ObstacleLayer::updateCosts(
   nav2_costmap_2d::Costmap2D & master_grid, int min_i, int min_j,
@@ -537,16 +537,16 @@ ObstacleLayer::updateCosts(
     was_reset_ = false;
     current_ = true;
   }
-
+  // 如果清理脚印，设置脚印内的代价值为空闲
   if (footprint_clearing_enabled_) {
     setConvexPolygonCost(transformed_footprint_, nav2_costmap_2d::FREE_SPACE);
   }
 
-  switch (combination_method_) {
-    case 0:  // Overwrite
+  switch (combination_method_) { // 选择更新策略
+    case 0:  // Overwrite 直接覆盖
       updateWithOverwrite(master_grid, min_i, min_j, max_i, max_j);
       break;
-    case 1:  // Maximum
+    case 1:  // Maximum 取两个地图间的最大值
       updateWithMax(master_grid, min_i, min_j, max_i, max_j);
       break;
     default:  // Nothing

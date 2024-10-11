@@ -39,10 +39,10 @@
 /** Provides a mapping for often used cost values */
 namespace nav2_costmap_2d
 {
-static constexpr unsigned char NO_INFORMATION = 255;
-static constexpr unsigned char LETHAL_OBSTACLE = 254;
-static constexpr unsigned char INSCRIBED_INFLATED_OBSTACLE = 253;
-static constexpr unsigned char MAX_NON_OBSTACLE = 252;
-static constexpr unsigned char FREE_SPACE = 0;
+static constexpr unsigned char NO_INFORMATION = 255;  // 未被观测区
+static constexpr unsigned char LETHAL_OBSTACLE = 254; // 致命障碍物
+static constexpr unsigned char INSCRIBED_INFLATED_OBSTACLE = 253; // 机器人内切圆半径膨胀层
+static constexpr unsigned char MAX_NON_OBSTACLE = 252; // 没有障碍物下降层参数
+static constexpr unsigned char FREE_SPACE = 0; // 空闲区域
 }
 #endif  // NAV2_COSTMAP_2D__COST_VALUES_HPP_
