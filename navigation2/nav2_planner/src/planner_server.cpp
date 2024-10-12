@@ -43,8 +43,8 @@ namespace nav2_planner
 PlannerServer::PlannerServer(const rclcpp::NodeOptions & options)
 : nav2_util::LifecycleNode("planner_server", "", options),
   gp_loader_("nav2_core", "nav2_core::GlobalPlanner"),
-  default_ids_{"GridBased"},
-  default_types_{"nav2_navfn_planner/NavfnPlanner"},
+  default_ids_{"GridBased"},  // 规划器id
+  default_types_{"nav2_navfn_planner/NavfnPlanner"}, // 规划器插件，具体算法
   costmap_(nullptr)
 {
   RCLCPP_INFO(get_logger(), "Creating");
@@ -60,7 +60,7 @@ PlannerServer::PlannerServer(const rclcpp::NodeOptions & options)
     }
   }
 
-  // Setup the global costmap
+  // Setup the global costmap // 声明一个全局代价地图对象
   costmap_ros_ = std::make_shared<nav2_costmap_2d::Costmap2DROS>(
     "global_costmap", std::string{get_namespace()}, "global_costmap");
 }
@@ -74,39 +74,39 @@ PlannerServer::~PlannerServer()
   planners_.clear();
   costmap_thread_.reset();
 }
-
+// 规划器配置函数
 nav2_util::CallbackReturn
 PlannerServer::on_configure(const rclcpp_lifecycle::State & /*state*/)
 {
   RCLCPP_INFO(get_logger(), "Configuring");
 
-  costmap_ros_->configure();
-  costmap_ = costmap_ros_->getCostmap();
+  costmap_ros_->configure(); // 配置代价地图
+  costmap_ = costmap_ros_->getCostmap(); // 返回一个update后的master代价地图
 
-  // Launch a thread to run the costmap node
+  // Launch a thread to run the costmap node 运行代价地图线程
   costmap_thread_ = std::make_unique<nav2_util::NodeThread>(costmap_ros_);
-
+  // 打印代价地图大小
   RCLCPP_DEBUG(
     get_logger(), "Costmap size: %d,%d",
     costmap_->getSizeInCellsX(), costmap_->getSizeInCellsY());
-
+  // 获取代价地图相关的tf树
   tf_ = costmap_ros_->getTfBuffer();
 
   planner_types_.resize(planner_ids_.size());
 
   auto node = shared_from_this();
-
+  // 遍历路径规划器，给每个规划器做实例化和初始配置，并存入规划器容器
   for (size_t i = 0; i != planner_ids_.size(); i++) {
     try {
       planner_types_[i] = nav2_util::get_plugin_type_param(
-        node, planner_ids_[i]);
+        node, planner_ids_[i]); // 获取规划器具体名字
       nav2_core::GlobalPlanner::Ptr planner =
-        gp_loader_.createUniqueInstance(planner_types_[i]);
+        gp_loader_.createUniqueInstance(planner_types_[i]); // 创建规划器实例
       RCLCPP_INFO(
         get_logger(), "Created global planner plugin %s of type %s",
         planner_ids_[i].c_str(), planner_types_[i].c_str());
-      planner->configure(node, planner_ids_[i], tf_, costmap_ros_);
-      planners_.insert({planner_ids_[i], planner});
+      planner->configure(node, planner_ids_[i], tf_, costmap_ros_); // 配置当前这个规划器
+      planners_.insert({planner_ids_[i], planner}); // 将配置好的一个规划器存入容器
     } catch (const pluginlib::PluginlibException & ex) {
       RCLCPP_FATAL(
         get_logger(), "Failed to create global planner. Exception: %s",
@@ -124,7 +124,7 @@ PlannerServer::on_configure(const rclcpp_lifecycle::State & /*state*/)
     "Planner Server has %s planners available.", planner_ids_concat_.c_str());
 
   double expected_planner_frequency;
-  get_parameter("expected_planner_frequency", expected_planner_frequency);
+  get_parameter("expected_planner_frequency", expected_planner_frequency); // 获取规划器路径
   if (expected_planner_frequency > 0) {
     max_planner_duration_ = 1 / expected_planner_frequency;
   } else {
@@ -135,18 +135,18 @@ PlannerServer::on_configure(const rclcpp_lifecycle::State & /*state*/)
     max_planner_duration_ = 0.0;
   }
 
-  // Initialize pubs & subs
+  // Initialize pubs & subs 创建路径发布器，用于调试显示
   plan_publisher_ = create_publisher<nav_msgs::msg::Path>("plan", 1);
-
+  // 创建动作服务器，用于路径计算
   // Create the action servers for path planning to a pose and through poses
   action_server_pose_ = std::make_unique<ActionServerToPose>(
     shared_from_this(),
     "compute_path_to_pose",
-    std::bind(&PlannerServer::computePlan, this),
+    std::bind(&PlannerServer::computePlan, this), // 到一个点的路径规划
     nullptr,
-    std::chrono::milliseconds(500),
+    std::chrono::milliseconds(500), // 延时是因为动作服务器刚起就受到客户端请求，可能会导致ros崩溃
     true);
-
+  // 这是through_poses的动作服务器
   action_server_poses_ = std::make_unique<ActionServerThroughPoses>(
     shared_from_this(),
     "compute_path_through_poses",
@@ -157,40 +157,40 @@ PlannerServer::on_configure(const rclcpp_lifecycle::State & /*state*/)
 
   return nav2_util::CallbackReturn::SUCCESS;
 }
-
+// 路径规划相关服务激活函数
 nav2_util::CallbackReturn
 PlannerServer::on_activate(const rclcpp_lifecycle::State & /*state*/)
 {
   RCLCPP_INFO(get_logger(), "Activating");
 
-  plan_publisher_->on_activate();
-  action_server_pose_->activate();
-  action_server_poses_->activate();
-  costmap_ros_->activate();
-
-  PlannerMap::iterator it;
+  plan_publisher_->on_activate(); // 激活路径发布器
+  action_server_pose_->activate(); // 激活to_pose动作服务器
+  action_server_poses_->activate(); // 激活through_poses动作服务器
+  costmap_ros_->activate(); // 激活代价地图服务器
+  // 遍历激活所有的路径规划器
+  PlannerMap::iterator it; 
   for (it = planners_.begin(); it != planners_.end(); ++it) {
     it->second->activate();
   }
 
   auto node = shared_from_this();
-
+  // 创建一个路径合法性查询服务
   is_path_valid_service_ = node->create_service<nav2_msgs::srv::IsPathValid>(
     "is_path_valid",
     std::bind(
       &PlannerServer::isPathValid, this,
       std::placeholders::_1, std::placeholders::_2));
 
-  // Add callback for dynamic parameters
+  // Add callback for dynamic parameters // 动态参数设置回调，在程序运行中动态设置参数
   dyn_params_handler_ = node->add_on_set_parameters_callback(
     std::bind(&PlannerServer::dynamicParametersCallback, this, _1));
 
   // create bond connection
-  createBond();
+  createBond(); // 绑定声明周期管理器
 
   return nav2_util::CallbackReturn::SUCCESS;
 }
-
+// 全局路径规划失活函数
 nav2_util::CallbackReturn
 PlannerServer::on_deactivate(const rclcpp_lifecycle::State & /*state*/)
 {
