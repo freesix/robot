@@ -221,7 +221,7 @@ PlannerServer::on_deactivate(const rclcpp_lifecycle::State & /*state*/)
 
   return nav2_util::CallbackReturn::SUCCESS;
 }
-
+// 路径规划资源清除函数
 nav2_util::CallbackReturn
 PlannerServer::on_cleanup(const rclcpp_lifecycle::State & /*state*/)
 {
@@ -244,7 +244,7 @@ PlannerServer::on_cleanup(const rclcpp_lifecycle::State & /*state*/)
   costmap_ = nullptr;
   return nav2_util::CallbackReturn::SUCCESS;
 }
-
+// 关闭生命周期节点、关闭全局路径规划节点
 nav2_util::CallbackReturn
 PlannerServer::on_shutdown(const rclcpp_lifecycle::State &)
 {
@@ -354,7 +354,7 @@ bool PlannerServer::validatePath(
 
   return true;
 }
-
+// 核心函数：多点路径规划
 void
 PlannerServer::computePlanThroughPoses()
 {
@@ -446,7 +446,7 @@ PlannerServer::computePlanThroughPoses()
     action_server_poses_->terminate_current();
   }
 }
-
+// 核心函数：计算单点路径
 void
 PlannerServer::computePlan()
 {
@@ -454,43 +454,43 @@ PlannerServer::computePlan()
 
   auto start_time = this->now();
 
-  // Initialize the ComputePathToPose goal and result
+  // Initialize the ComputePathToPose goal and result 初始化路径目标和返回结果的变量或对象
   auto goal = action_server_pose_->get_current_goal();
   auto result = std::make_shared<ActionToPose::Result>();
 
-  try {
+  try {  // 异常处理，查看路径规划服务器是否激活，动作客户端的规划请求是否取消
     if (isServerInactive(action_server_pose_) || isCancelRequested(action_server_pose_)) {
       return;
     }
 
-    waitForCostmap();
+    waitForCostmap(); // 等待代价地图更新
 
-    getPreemptedGoalIfRequested(action_server_pose_, goal);
-
+    getPreemptedGoalIfRequested(action_server_pose_, goal); // 是否响应抢占目标
+    // 获取起点，一种是使用动作客户端请求的起点，一种是使用机器人本体位置作为起点
     // Use start pose if provided otherwise use current robot pose
     geometry_msgs::msg::PoseStamped start;
     if (!getStartPose(action_server_pose_, goal, start)) {
       return;
     }
 
-    // Transform them into the global frame
+    // Transform them into the global frame 将起点终点转换到全局坐标系下(通常为map坐标系)
     geometry_msgs::msg::PoseStamped goal_pose = goal->goal;
     if (!transformPosesToGlobalFrame(action_server_pose_, start, goal_pose)) {
       return;
     }
-
+    // 获取路径
     result->path = getPlan(start, goal_pose, goal->planner_id);
-
+    // 对生成的路径进行判断是否为空
     if (!validatePath(action_server_pose_, goal_pose, result->path, goal->planner_id)) {
       return;
     }
 
-    // Publish the plan for visualization purposes
+    // Publish the plan for visualization purposes 发布路径
     publishPlan(result->path);
-
+    // 计算路径规划耗时
     auto cycle_duration = this->now() - start_time;
     result->planning_time = cycle_duration;
-
+    // 判断全局路径更新频率
     if (max_planner_duration_ && cycle_duration.seconds() > max_planner_duration_) {
       RCLCPP_WARN(
         get_logger(),
@@ -498,7 +498,7 @@ PlannerServer::computePlan()
         1 / max_planner_duration_, 1 / cycle_duration.seconds());
     }
 
-    action_server_pose_->succeeded_current(result);
+    action_server_pose_->succeeded_current(result); // 动作服务器返回结果给动作请求客户端
   } catch (std::exception & ex) {
     RCLCPP_WARN(
       get_logger(), "%s plugin failed to plan calculation to (%.2f, %.2f): \"%s\"",
@@ -514,22 +514,22 @@ PlannerServer::getPlan(
   const geometry_msgs::msg::PoseStamped & goal,
   const std::string & planner_id)
 {
-  RCLCPP_DEBUG(
+  RCLCPP_DEBUG( // 路径计算的日志输出
     get_logger(), "Attempting to a find path from (%.2f, %.2f) to "
     "(%.2f, %.2f).", start.pose.position.x, start.pose.position.y,
     goal.pose.position.x, goal.pose.position.y);
 
-  if (planners_.find(planner_id) != planners_.end()) {
+  if (planners_.find(planner_id) != planners_.end()) { // 查找指定的规划器并计算路径
     return planners_[planner_id]->createPlan(start, goal);
   } else {
-    if (planners_.size() == 1 && planner_id.empty()) {
+    if (planners_.size() == 1 && planner_id.empty()) { // 路径规划器容器中只有一个规划器，且没有指定规划器，则使用此默认规划器
       RCLCPP_WARN_ONCE(
         get_logger(), "No planners specified in action call. "
         "Server will use only plugin %s in server."
         " This warning will appear once.", planner_ids_concat_.c_str());
       return planners_[planners_.begin()->first]->createPlan(start, goal);
     } else {
-      RCLCPP_ERROR(
+      RCLCPP_ERROR(  // 报错，没有找到请求的规划器类型
         get_logger(), "planner %s is not a valid planner. "
         "Planner names are: %s", planner_id.c_str(),
         planner_ids_concat_.c_str());
@@ -547,7 +547,7 @@ PlannerServer::publishPlan(const nav_msgs::msg::Path & path)
     plan_publisher_->publish(std::move(msg));
   }
 }
-
+// 判断路径的合法性
 void PlannerServer::isPathValid(
   const std::shared_ptr<nav2_msgs::srv::IsPathValid::Request> request,
   std::shared_ptr<nav2_msgs::srv::IsPathValid::Response> response)
@@ -558,14 +558,14 @@ void PlannerServer::isPathValid(
     response->is_valid = false;
     return;
   }
-
+  // 找到机器人当前位置对应的路径点(最接近的那个点)
   geometry_msgs::msg::PoseStamped current_pose;
   unsigned int closest_point_index = 0;
-  if (costmap_ros_->getRobotPose(current_pose)) {
+  if (costmap_ros_->getRobotPose(current_pose)) { // 获取机器人当前位置
     float current_distance = std::numeric_limits<float>::max();
     float closest_distance = current_distance;
     geometry_msgs::msg::Point current_point = current_pose.pose.position;
-    for (unsigned int i = 0; i < request->path.poses.size(); ++i) {
+    for (unsigned int i = 0; i < request->path.poses.size(); ++i) { // 遍历路径，找到最近点离机器人
       geometry_msgs::msg::Point path_point = request->path.poses[i].pose.position;
 
       current_distance = nav2_util::geometry_utils::euclidean_distance(
@@ -582,6 +582,7 @@ void PlannerServer::isPathValid(
      * The lethal check starts at the closest point to avoid points that have already been passed
      * and may have become occupied
      */
+    // 遍历最近点之后的路径所有点，检查是否有障碍物
     std::unique_lock<nav2_costmap_2d::Costmap2D::mutex_t> lock(*(costmap_->getMutex()));
     unsigned int mx = 0;
     unsigned int my = 0;
@@ -589,7 +590,7 @@ void PlannerServer::isPathValid(
       costmap_->worldToMap(
         request->path.poses[i].pose.position.x,
         request->path.poses[i].pose.position.y, mx, my);
-      unsigned int cost = costmap_->getCost(mx, my);
+      unsigned int cost = costmap_->getCost(mx, my); // 获取后面路径点的地图上代价值
 
       if (cost == nav2_costmap_2d::LETHAL_OBSTACLE ||
         cost == nav2_costmap_2d::INSCRIBED_INFLATED_OBSTACLE)

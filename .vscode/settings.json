@@ -1,0 +1,30 @@
+{
+    "python.autoComplete.extraPaths": [
+        "/home/freesix/tl_ws/build/web_control",
+        "/home/freesix/tl_ws/install/web_control/lib/python3.10/site-packages",
+        "/home/freesix/tl_ws/install/serial_imu_interface/local/lib/python3.10/dist-packages",
+        "/home/freesix/tl_ws/install/dwb_msgs/local/lib/python3.10/dist-packages",
+        "/home/freesix/tl_ws/install/nav_2d_msgs/local/lib/python3.10/dist-packages",
+        "/home/freesix/tl_ws/build/nav2_simple_commander",
+        "/home/freesix/tl_ws/install/nav2_simple_commander/lib/python3.10/site-packages",
+        "/home/freesix/tl_ws/install/nav2_msgs/local/lib/python3.10/dist-packages",
+        "/home/freesix/tl_ws/install/nav2_common/local/lib/python3.10/dist-packages",
+        "/home/freesix/tl_ws/install/cartographer_ros_msgs/local/lib/python3.10/dist-packages",
+        "/opt/ros/humble/lib/python3.10/site-packages",
+        "/opt/ros/humble/local/lib/python3.10/dist-packages"
+    ],
+    "python.analysis.extraPaths": [
+        "/home/freesix/tl_ws/build/web_control",
+        "/home/freesix/tl_ws/install/web_control/lib/python3.10/site-packages",
+        "/home/freesix/tl_ws/install/serial_imu_interface/local/lib/python3.10/dist-packages",
+        "/home/freesix/tl_ws/install/dwb_msgs/local/lib/python3.10/dist-packages",
+        "/home/freesix/tl_ws/install/nav_2d_msgs/local/lib/python3.10/dist-packages",
+        "/home/freesix/tl_ws/build/nav2_simple_commander",
+        "/home/freesix/tl_ws/install/nav2_simple_commander/lib/python3.10/site-packages",
+        "/home/freesix/tl_ws/install/nav2_msgs/local/lib/python3.10/dist-packages",
+        "/home/freesix/tl_ws/install/nav2_common/local/lib/python3.10/dist-packages",
+        "/home/freesix/tl_ws/install/cartographer_ros_msgs/local/lib/python3.10/dist-packages",
+        "/opt/ros/humble/lib/python3.10/site-packages",
+        "/opt/ros/humble/local/lib/python3.10/dist-packages"
+    ]
+}
