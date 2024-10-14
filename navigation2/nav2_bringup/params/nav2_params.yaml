@@ -275,12 +275,12 @@ map_saver:
 
 planner_server:
   ros__parameters:
-    expected_planner_frequency: 20.0
+    expected_planner_frequency: 20.0 # 期望的规划器频率，路径计算有耗时，所以是期望达到的频率
     use_sim_time: True
-    planner_plugins: ["GridBased"]
-    GridBased:
-      plugin: "nav2_navfn_planner/NavfnPlanner"
-      tolerance: 0.5
+    planner_plugins: ["GridBased"] # 要加载的规划器id，后续动作请求具体使用哪个规划器
+    GridBased: # 对应上面规划器id，下面为此规划器内的一些参数设置
+      plugin: "nav2_navfn_planner/NavfnPlanner" # 此id规划器具体指代的规划器插件
+      tolerance: 0.5 # 公差
       use_astar: false
       allow_unknown: true
 

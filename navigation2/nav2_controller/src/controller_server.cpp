@@ -351,23 +351,23 @@ bool ControllerServer::findGoalCheckerId(
 
   return true;
 }
-
+// 核心控制器函数，follow_path动作服务器的，回调函数，用于不断计算和发布速度
 void ControllerServer::computeControl()
 {
-  std::lock_guard<std::mutex> lock(dynamic_params_lock_);
+  std::lock_guard<std::mutex> lock(dynamic_params_lock_); // 锁定动态参数
 
   RCLCPP_INFO(get_logger(), "Received a goal, begin computing control effort.");
 
-  try {
+  try {  // 获取请求id的控制器
     std::string c_name = action_server_->get_current_goal()->controller_id;
     std::string current_controller;
     if (findControllerId(c_name, current_controller)) {
       current_controller_ = current_controller;
-    } else {
+    } else { // 没有找到指定的控制器，终止动作服务器
       action_server_->terminate_current();
       return;
     }
-
+    // 同上，这里是查找目标检测器
     std::string gc_name = action_server_->get_current_goal()->goal_checker_id;
     std::string current_goal_checker;
     if (findGoalCheckerId(gc_name, current_goal_checker)) {
@@ -377,34 +377,34 @@ void ControllerServer::computeControl()
       return;
     }
 
-    setPlannerPath(action_server_->get_current_goal()->path);
-    progress_checker_->reset();
+    setPlannerPath(action_server_->get_current_goal()->path); // 将全局路径给到局部控制器
+    progress_checker_->reset(); // 复位进度检查器
 
     last_valid_cmd_time_ = now();
     rclcpp::WallRate loop_rate(controller_frequency_);
     while (rclcpp::ok()) {
-      if (action_server_ == nullptr || !action_server_->is_server_active()) {
+      if (action_server_ == nullptr || !action_server_->is_server_active()) { // 检查服务器是否存在和激活
         RCLCPP_DEBUG(get_logger(), "Action server unavailable or inactive. Stopping.");
         return;
       }
-
+      // 动作客户端是否发送了取消请求
       if (action_server_->is_cancel_requested()) {
         RCLCPP_INFO(get_logger(), "Goal was canceled. Stopping the robot.");
         action_server_->terminate_all();
         publishZeroVelocity();
         return;
       }
-
+      // 等待局部代价地图可用
       // Don't compute a trajectory until costmap is valid (after clear costmap)
       rclcpp::Rate r(100);
       while (!costmap_ros_->isCurrent()) {
         r.sleep();
       }
 
-      updateGlobalPath();
+      updateGlobalPath();  // 处理路径变化的更新
 
-      computeAndPublishVelocity();
-
+      computeAndPublishVelocity(); // 计算并发布速度
+      // 判断是否到达目标点
       if (isGoalReached()) {
         RCLCPP_INFO(get_logger(), "Reached the goal!");
         break;
@@ -457,29 +457,29 @@ void ControllerServer::setPlannerPath(const nav_msgs::msg::Path & path)
 
   current_path_ = path;
 }
-
+// 核心函数，控制器的速度计算和发布
 void ControllerServer::computeAndPublishVelocity()
 {
   geometry_msgs::msg::PoseStamped pose;
-
+  // 获取当前机器人位置
   if (!getRobotPose(pose)) {
     throw nav2_core::PlannerException("Failed to obtain robot pose");
   }
-
+  // 进度检查
   if (!progress_checker_->check(pose)) {
     throw nav2_core::PlannerException("Failed to make progress");
   }
-
+  // 从odom获取当前速度
   nav_2d_msgs::msg::Twist2D twist = getThresholdedTwist(odom_sub_->getTwist());
 
-  geometry_msgs::msg::TwistStamped cmd_vel_2d;
+  geometry_msgs::msg::TwistStamped cmd_vel_2d; // 计算的速度值
 
   try {
     cmd_vel_2d =
-      controllers_[current_controller_]->computeVelocityCommands(
-      pose,
-      nav_2d_utils::twist2Dto3D(twist),
-      goal_checkers_[current_goal_checker_].get());
+      controllers_[current_controller_]->computeVelocityCommands(  // 调用对应current_controller控制器来计算
+      pose, // 当前位置
+      nav_2d_utils::twist2Dto3D(twist), // 当前速度
+      goal_checkers_[current_goal_checker_].get()); // 目标检测器
     last_valid_cmd_time_ = now();
   } catch (nav2_core::PlannerException & e) {
     if (failure_tolerance_ > 0 || failure_tolerance_ == -1.0) {
@@ -501,11 +501,11 @@ void ControllerServer::computeAndPublishVelocity()
       throw nav2_core::PlannerException(e.what());
     }
   }
-
+  // 下面是计算一些反馈值，向动作客户端返回服务器的反馈值
   std::shared_ptr<Action::Feedback> feedback = std::make_shared<Action::Feedback>();
   feedback->speed = std::hypot(cmd_vel_2d.twist.linear.x, cmd_vel_2d.twist.linear.y);
 
-  // Find the closest pose to current pose on global path
+  // Find the closest pose to current pose on global path 找到离当前位置最近的全局路径上的点
   nav_msgs::msg::Path & current_path = current_path_;
   auto find_closest_pose_idx =
     [&pose, &current_path]() {
@@ -521,10 +521,10 @@ void ControllerServer::computeAndPublishVelocity()
       }
       return closest_pose_idx;
     };
-
+  // 计算离目标点的距离
   feedback->distance_to_goal =
     nav2_util::geometry_utils::calculate_path_length(current_path_, find_closest_pose_idx());
-  action_server_->publish_feedback(feedback);
+  action_server_->publish_feedback(feedback); // 反馈
 
   RCLCPP_DEBUG(get_logger(), "Publishing velocity at time %.2f", now().seconds());
   publishVelocity(cmd_vel_2d);
@@ -580,24 +580,24 @@ void ControllerServer::publishZeroVelocity()
   velocity.header.stamp = now();
   publishVelocity(velocity);
 }
-
+// 调用目标点检测器，检查是否到达目标点位置
 bool ControllerServer::isGoalReached()
 {
   geometry_msgs::msg::PoseStamped pose;
-
+  // 获取当前位置
   if (!getRobotPose(pose)) {
     return false;
   }
-
+  // 获取当前速度
   nav_2d_msgs::msg::Twist2D twist = getThresholdedTwist(odom_sub_->getTwist());
   geometry_msgs::msg::Twist velocity = nav_2d_utils::twist2Dto3D(twist);
-
+  // 坐标转换，转换到局部坐标系下
   geometry_msgs::msg::PoseStamped transformed_end_pose;
   rclcpp::Duration tolerance(rclcpp::Duration::from_seconds(costmap_ros_->getTransformTolerance()));
   nav_2d_utils::transformPose(
     costmap_ros_->getTfBuffer(), costmap_ros_->getGlobalFrameID(),
     end_pose_, transformed_end_pose, tolerance);
-
+  // 此处进行真正的目标检测，检测距离、角度是否在允许阈值内
   return goal_checkers_[current_goal_checker_]->isGoalReached(
     pose.pose, transformed_end_pose.pose,
     velocity);

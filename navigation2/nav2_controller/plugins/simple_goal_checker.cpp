@@ -98,7 +98,7 @@ void SimpleGoalChecker::reset()
 bool SimpleGoalChecker::isGoalReached(
   const geometry_msgs::msg::Pose & query_pose, const geometry_msgs::msg::Pose & goal_pose,
   const geometry_msgs::msg::Twist &)
-{
+{ // 检查距离是否符合阈值
   if (check_xy_) {
     double dx = query_pose.position.x - goal_pose.position.x,
       dy = query_pose.position.y - goal_pose.position.y;
@@ -110,7 +110,7 @@ bool SimpleGoalChecker::isGoalReached(
     if (stateful_) {
       check_xy_ = false;
     }
-  }
+  }  // 检查角度是否符合阈值
   double dyaw = angles::shortest_angular_distance(
     tf2::getYaw(query_pose.orientation),
     tf2::getYaw(goal_pose.orientation));
