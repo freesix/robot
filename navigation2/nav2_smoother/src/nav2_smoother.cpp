@@ -106,7 +106,7 @@ SmootherServer::on_configure(const rclcpp_lifecycle::State &)
   // Initialize pubs & subs
   plan_publisher_ = create_publisher<nav_msgs::msg::Path>("plan_smoothed", 1);
 
-  // Create the action server that we implement with our smoothPath method
+  // Create the action server that we implement with our smoothPath method 创建路径平滑动作服务器
   action_server_ = std::make_unique<ActionServer>(
     shared_from_this(),
     "smooth_path",
@@ -259,7 +259,7 @@ void SmootherServer::smoothPlan()
   RCLCPP_INFO(get_logger(), "Received a path to smooth.");
 
   auto result = std::make_shared<Action::Result>();
-  try {
+  try {  // 找到指定的平滑器(navigation2的运行期切换)
     auto goal = action_server_->get_current_goal();
     if (!goal) {
       return;  //  if action_server_ is inactivate, goal would be a nullptr
@@ -276,10 +276,10 @@ void SmootherServer::smoothPlan()
 
     // Perform smoothing
     result->path = goal->path;
-    result->was_completed = smoothers_[current_smoother_]->smooth(
+    result->was_completed = smoothers_[current_smoother_]->smooth( // 核心代码，调用平滑函数
       result->path, goal->max_smoothing_duration);
     result->smoothing_duration = this->now() - start_time;
-
+    // 规定时间内未完成
     if (!result->was_completed) {
       RCLCPP_INFO(
         get_logger(),
@@ -289,7 +289,7 @@ void SmootherServer::smoothPlan()
         rclcpp::Duration(goal->max_smoothing_duration).seconds(),
         rclcpp::Duration(result->smoothing_duration).seconds());
     }
-    plan_publisher_->publish(result->path);
+    plan_publisher_->publish(result->path); // 发布路径
 
     // Check for collisions
     if (goal->check_for_collisions) {
@@ -316,7 +316,7 @@ void SmootherServer::smoothPlan()
       get_logger(), "Smoother succeeded (time: %lf), setting result",
       rclcpp::Duration(result->smoothing_duration).seconds());
 
-    action_server_->succeeded_current(result);
+    action_server_->succeeded_current(result); // 返回服务器结果
   } catch (nav2_core::PlannerException & e) {
     RCLCPP_ERROR(this->get_logger(), "%s", e.what());
     action_server_->terminate_current();

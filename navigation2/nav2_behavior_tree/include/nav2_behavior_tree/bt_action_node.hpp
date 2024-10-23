@@ -190,7 +190,7 @@ public:
    * @return BT::NodeStatus Status of tick execution
    */
   BT::NodeStatus tick() override
-  {
+  { // 第一次进入tick：切换状态running
     // first step to be done only at the beginning of the Action
     if (status() == BT::NodeStatus::IDLE) {
       // setting the status to RUNNING to notify the BT Loggers (if any)

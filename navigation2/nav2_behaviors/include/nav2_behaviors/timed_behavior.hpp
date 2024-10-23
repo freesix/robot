@@ -121,7 +121,7 @@ public:
     node->get_parameter("robot_base_frame", robot_base_frame_);
     node->get_parameter("transform_tolerance", transform_tolerance_);
 
-    action_server_ = std::make_shared<ActionServer>(
+    action_server_ = std::make_shared<ActionServer>(  // 创建具体的动作恢复行为服务器
       node, behavior_name_,
       std::bind(&TimedBehavior::execute, this));
 

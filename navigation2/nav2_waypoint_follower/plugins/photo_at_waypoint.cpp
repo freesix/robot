@@ -30,7 +30,7 @@ PhotoAtWaypoint::PhotoAtWaypoint()
 PhotoAtWaypoint::~PhotoAtWaypoint()
 {
 }
-
+// 在路点跟随任务中调用的在路点拍照执行器的初始化函数
 void PhotoAtWaypoint::initialize(
   const rclcpp_lifecycle::LifecycleNode::WeakPtr & parent,
   const std::string & plugin_name)

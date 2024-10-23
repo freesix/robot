@@ -20,15 +20,29 @@ private:
         transformStamped.header.frame_id = "world";
         transformStamped.child_frame_id = "imu_link";
 
+        float dx = msg->linear_acceleration.x * dt + 0.5 * msg->angular_velocity.x * dt * dt;
+        float dy = msg->linear_acceleration.y * dt + 0.5 * msg->angular_velocity.y * dt * dt;
+        float dz = (msg->linear_acceleration.z-9.80) * dt + 0.5 * msg->angular_velocity.z * dt * dt;
+        px+=dx;
+        py+=dy;
+        pz+=dz;
+ 
         // 将 IMU 姿态设置为变换
         transformStamped.transform.rotation = msg->orientation;
+        transformStamped.transform.translation.x=px;
+        transformStamped.transform.translation.y=py;
+        transformStamped.transform.translation.z=pz;
 
         // 发布 TF 变换
         tf_broadcaster_->sendTransform(transformStamped);
     }
 
+
     rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr subscription_;
     std::shared_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
+
+    float dt = 0.005;
+    float px=0, py=0, pz=0;
 };
 
 int main(int argc, char **argv) {

@@ -15,7 +15,7 @@ def generate_launch_description():
   ## ***** File paths ******
     pkg_share = FindPackageShare('cartographer_ros').find('cartographer_ros')
     urdf_dir = os.path.join(pkg_share, 'urdf')
-    urdf_file = os.path.join(urdf_dir, 'backpack_2d.urdf')
+    urdf_file = os.path.join(urdf_dir, 'fd_base.urdf')
     with open(urdf_file, 'r') as infp:
         robot_desc = infp.read()
 

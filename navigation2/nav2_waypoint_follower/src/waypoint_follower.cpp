@@ -63,14 +63,14 @@ WaypointFollower::on_configure(const rclcpp_lifecycle::State & /*state*/)
     rclcpp::CallbackGroupType::MutuallyExclusive,
     false);
   callback_group_executor_.add_callback_group(callback_group_, get_node_base_interface());
-
+  // 创建客户端，发送导航点(调用行为树中的行为)
   nav_to_pose_client_ = rclcpp_action::create_client<ClientT>(
     get_node_base_interface(),
     get_node_graph_interface(),
     get_node_logging_interface(),
     get_node_waitables_interface(),
     "navigate_to_pose", callback_group_);
-
+  // 创建一个跟随路点的动作服务，绑定了自定义的回调函数
   action_server_ = std::make_unique<ActionServer>(
     get_node_base_interface(),
     get_node_clock_interface(),
@@ -146,7 +146,7 @@ WaypointFollower::on_shutdown(const rclcpp_lifecycle::State & /*state*/)
   RCLCPP_INFO(get_logger(), "Shutting down");
   return nav2_util::CallbackReturn::SUCCESS;
 }
-
+// 核心函数，执行多路点跟随
 void
 WaypointFollower::followWaypoints()
 {
@@ -154,16 +154,16 @@ WaypointFollower::followWaypoints()
   auto feedback = std::make_shared<ActionT::Feedback>();
   auto result = std::make_shared<ActionT::Result>();
 
-  // Check if request is valid
+  // Check if request is valid 检查动作服务器是否激活
   if (!action_server_ || !action_server_->is_server_active()) {
     RCLCPP_DEBUG(get_logger(), "Action server inactive. Stopping.");
     return;
   }
-
+  // 获取跟随路点数量
   RCLCPP_INFO(
     get_logger(), "Received follow waypoint request with %i waypoints.",
     static_cast<int>(goal->poses.size()));
-
+  // 判断路点是否为空
   if (goal->poses.size() == 0) {
     action_server_->succeeded_current(result);
     return;
@@ -172,9 +172,9 @@ WaypointFollower::followWaypoints()
   rclcpp::WallRate r(loop_rate_);
   uint32_t goal_index = 0;
   bool new_goal = true;
-
+  // 核心函数，循环执行路点
   while (rclcpp::ok()) {
-    // Check if asked to stop processing action
+    // Check if asked to stop processing action 检查是否有取消请求
     if (action_server_->is_cancel_requested()) {
       auto cancel_future = nav_to_pose_client_->async_cancel_all_goals();
       callback_group_executor_.spin_until_future_complete(cancel_future);
@@ -184,7 +184,7 @@ WaypointFollower::followWaypoints()
       return;
     }
 
-    // Check if asked to process another action
+    // Check if asked to process another action 响应中断，被另一个请求抢断
     if (action_server_->is_preempt_requested()) {
       RCLCPP_INFO(get_logger(), "Preempting the goal pose.");
       goal = action_server_->accept_pending_goal();
@@ -192,29 +192,29 @@ WaypointFollower::followWaypoints()
       new_goal = true;
     }
 
-    // Check if we need to send a new goal
+    // Check if we need to send a new goal 发送一个目标点
     if (new_goal) {
       new_goal = false;
       ClientT::Goal client_goal;
-      client_goal.pose = goal->poses[goal_index];
+      client_goal.pose = goal->poses[goal_index]; // 目标点位置姿态
 
       auto send_goal_options = rclcpp_action::Client<ClientT>::SendGoalOptions();
       send_goal_options.result_callback =
-        std::bind(&WaypointFollower::resultCallback, this, std::placeholders::_1);
+        std::bind(&WaypointFollower::resultCallback, this, std::placeholders::_1); // 执行结果回调
       send_goal_options.goal_response_callback =
-        std::bind(&WaypointFollower::goalResponseCallback, this, std::placeholders::_1);
+        std::bind(&WaypointFollower::goalResponseCallback, this, std::placeholders::_1); // 路点结果的回调
       future_goal_handle_ =
-        nav_to_pose_client_->async_send_goal(client_goal, send_goal_options);
+        nav_to_pose_client_->async_send_goal(client_goal, send_goal_options); // 给行为树发送目标点
       current_goal_status_ = ActionStatus::PROCESSING;
     }
-
+    // 给客户请求端发送反馈
     feedback->current_waypoint = goal_index;
     action_server_->publish_feedback(feedback);
-
-    if (current_goal_status_ == ActionStatus::FAILED) {
+    /********** 处理导航结果，(在action的callback中有更新) */
+    if (current_goal_status_ == ActionStatus::FAILED) { // 导航失败
       failed_ids_.push_back(goal_index);
 
-      if (stop_on_failure_) {
+      if (stop_on_failure_) { // 导航失败是否停止
         RCLCPP_WARN(
           get_logger(), "Failed to process waypoint %i in waypoint "
           "list and stop on failure is enabled."
@@ -223,22 +223,22 @@ WaypointFollower::followWaypoints()
         action_server_->terminate_current(result);
         failed_ids_.clear();
         return;
-      } else {
+      } else {  // 不停止，继续执行下一个点的导航
         RCLCPP_INFO(
           get_logger(), "Failed to process waypoint %i,"
           " moving to next.", goal_index);
       }
-    } else if (current_goal_status_ == ActionStatus::SUCCEEDED) {
+    } else if (current_goal_status_ == ActionStatus::SUCCEEDED) { // 导航成功，执行到点任务
       RCLCPP_INFO(
         get_logger(), "Succeeded processing waypoint %i, processing waypoint task execution",
         goal_index);
-      bool is_task_executed = waypoint_task_executor_->processAtWaypoint(
+      bool is_task_executed = waypoint_task_executor_->processAtWaypoint( // 任务执行器
         goal->poses[goal_index], goal_index);
       RCLCPP_INFO(
         get_logger(), "Task execution at waypoint %i %s", goal_index,
         is_task_executed ? "succeeded" : "failed!");
       // if task execution was failed and stop_on_failure_ is on , terminate action
-      if (!is_task_executed && stop_on_failure_) {
+      if (!is_task_executed && stop_on_failure_) { // 判断对应路点的任务执行是否成功
         failed_ids_.push_back(goal_index);
         RCLCPP_WARN(
           get_logger(), "Failed to execute task at waypoint %i "
@@ -254,7 +254,7 @@ WaypointFollower::followWaypoints()
           " moving to next.", goal_index);
       }
     }
-
+    // 一次导航结束，设置更新目标点标志位
     if (current_goal_status_ != ActionStatus::PROCESSING &&
       current_goal_status_ != ActionStatus::UNKNOWN)
     {

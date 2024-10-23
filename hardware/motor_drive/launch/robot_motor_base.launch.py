@@ -16,7 +16,7 @@ def generate_launch_description():
     base_frame_id = LaunchConfiguration('base_frame_id')
 
     VOLECITY_TOPIC_cmd = DeclareLaunchArgument('velocity_cmd_topic', default_value='/cmd_vel')
-    serial_port_name_cmd = DeclareLaunchArgument('serial_port_name', default_value='/dev/ttyUSB0')
+    serial_port_name_cmd = DeclareLaunchArgument('serial_port_name', default_value='/dev/ttyUSB1')
     serial_baudrate_cmd = DeclareLaunchArgument('serial_baudrate', default_value='19200')   
     right_wheel_radius_cmd = DeclareLaunchArgument('right_wheel_radius', default_value='0.0845')    
     left_wheel_radius_cmd = DeclareLaunchArgument('left_wheel_radius', default_value='0.0845')     

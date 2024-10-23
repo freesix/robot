@@ -104,22 +104,22 @@ nav2_util::CallbackReturn
 BtNavigator::on_configure(const rclcpp_lifecycle::State & /*state*/)
 {
   RCLCPP_INFO(get_logger(), "Configuring");
-
+  // 设置tf监听
   tf_ = std::make_shared<tf2_ros::Buffer>(get_clock());
   auto timer_interface = std::make_shared<tf2_ros::CreateTimerROS>(
     get_node_base_interface(), get_node_timers_interface());
   tf_->setCreateTimerInterface(timer_interface);
   tf_->setUsingDedicatedThread(true);
   tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_, this, false);
-
+  // 获取参数
   global_frame_ = get_parameter("global_frame").as_string();
   robot_frame_ = get_parameter("robot_base_frame").as_string();
   transform_tolerance_ = get_parameter("transform_tolerance").as_double();
   odom_topic_ = get_parameter("odom_topic").as_string();
-
+  // 加载插件名字，一次加载所有插件
   // Libraries to pull plugins (BT Nodes) from
   auto plugin_lib_names = get_parameter("plugin_lib_names").as_string_array();
-
+  // 实例化两个基于行为树的导航器
   pose_navigator_ = std::make_unique<nav2_bt_navigator::NavigateToPoseNavigator>();
   poses_navigator_ = std::make_unique<nav2_bt_navigator::NavigateThroughPosesNavigator>();
 
@@ -128,16 +128,16 @@ BtNavigator::on_configure(const rclcpp_lifecycle::State & /*state*/)
   feedback_utils.global_frame = global_frame_;
   feedback_utils.robot_frame = robot_frame_;
   feedback_utils.transform_tolerance = transform_tolerance_;
-
+  // 获取实时速度的方法
   // Odometry smoother object for getting current speed
   odom_smoother_ = std::make_shared<nav2_util::OdomSmoother>(shared_from_this(), 0.3, odom_topic_);
-
+  // 配置单点导航行为树
   if (!pose_navigator_->on_configure(
       shared_from_this(), plugin_lib_names, feedback_utils, &plugin_muxer_, odom_smoother_))
   {
     return nav2_util::CallbackReturn::FAILURE;
   }
-
+  // 配置多点导航行为树
   if (!poses_navigator_->on_configure(
       shared_from_this(), plugin_lib_names, feedback_utils, &plugin_muxer_, odom_smoother_))
   {
@@ -156,7 +156,7 @@ BtNavigator::on_activate(const rclcpp_lifecycle::State & /*state*/)
     return nav2_util::CallbackReturn::FAILURE;
   }
 
-  // create bond connection
+  // create bond connection 与lifecycle节点创建绑定
   createBond();
 
   return nav2_util::CallbackReturn::SUCCESS;

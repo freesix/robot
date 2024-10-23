@@ -109,71 +109,71 @@ bt_navigator_navigate_to_pose_rclcpp_node:
   ros__parameters:
     use_sim_time: True
 
-controller_server:
+controller_server:  # 控制服务器
   ros__parameters:
     use_sim_time: True
-    controller_frequency: 20.0
+    controller_frequency: 20.0  # 控制频率
     min_x_velocity_threshold: 0.001
     min_y_velocity_threshold: 0.5
     min_theta_velocity_threshold: 0.001
     failure_tolerance: 0.3
-    progress_checker_plugin: "progress_checker"
+    progress_checker_plugin: "progress_checker" # 进度检查器插件的名字
     goal_checker_plugins: ["general_goal_checker"] # "precise_goal_checker"
     controller_plugins: ["FollowPath"]
 
     # Progress checker parameters
-    progress_checker:
-      plugin: "nav2_controller::SimpleProgressChecker"
-      required_movement_radius: 0.5
-      movement_time_allowance: 10.0
+    progress_checker:  # 进度检查器
+      plugin: "nav2_controller::SimpleProgressChecker"  # 具体插件实现
+      required_movement_radius: 0.5 # 检查移动的距离
+      movement_time_allowance: 10.0 # 检查允许的移动距离，如果在一次进度检查中，允许时间内未到达目标点
     # Goal checker parameters
-    #precise_goal_checker:
-    #  plugin: "nav2_controller::SimpleGoalChecker"
-    #  xy_goal_tolerance: 0.25
-    #  yaw_goal_tolerance: 0.25
-    #  stateful: True
+    #precise_goal_checker:  # 目标检查器
+    #  plugin: "nav2_controller::SimpleGoalChecker" # 具体插件实现
+    #  xy_goal_tolerance: 0.25  # 允许的xy误差
+    #  yaw_goal_tolerance: 0.25 # 允许的yaw值误差
+    #  stateful: True  # 是否需要同时检查位置和角度
     general_goal_checker:
       stateful: True
       plugin: "nav2_controller::SimpleGoalChecker"
       xy_goal_tolerance: 0.25
       yaw_goal_tolerance: 0.25
     # DWB parameters
-    FollowPath:
-      plugin: "dwb_core::DWBLocalPlanner"
+    FollowPath:  # 控制插件
+      plugin: "dwb_core::DWBLocalPlanner"  # 控制插件的具体实现
       debug_trajectory_details: True
-      min_vel_x: 0.0
-      min_vel_y: 0.0
-      max_vel_x: 0.26
-      max_vel_y: 0.0
-      max_vel_theta: 1.0
-      min_speed_xy: 0.0
-      max_speed_xy: 0.26
-      min_speed_theta: 0.0
+      min_vel_x: 0.0 # 最小速度x
+      min_vel_y: 0.0 # 最小速度y
+      max_vel_x: 0.26 # 最大速度x
+      max_vel_y: 0.0 # 最大速度y
+      max_vel_theta: 1.0  # 最大角速度
+      min_speed_xy: 0.0  # 最小平移速度
+      max_speed_xy: 0.26 # 最大平移速度
+      min_speed_theta: 0.0 # 最小角速度(rad/s)
       # Add high threshold velocity for turtlebot 3 issue.
       # https://github.com/ROBOTIS-GIT/turtlebot3_simulations/issues/75
-      acc_lim_x: 2.5
-      acc_lim_y: 0.0
+      acc_lim_x: 2.5  # 最大加速度x
+      acc_lim_y: 0.0  # y轴最大加速度
       acc_lim_theta: 3.2
-      decel_lim_x: -2.5
-      decel_lim_y: 0.0
+      decel_lim_x: -2.5 # x轴最大减速度
+      decel_lim_y: 0.0 # y轴最大减速度
       decel_lim_theta: -3.2
-      vx_samples: 20
-      vy_samples: 5
-      vtheta_samples: 20
-      sim_time: 1.7
-      linear_granularity: 0.05
-      angular_granularity: 0.025
-      transform_tolerance: 0.2
+      vx_samples: 20  # vx的采样点数
+      vy_samples: 5   # vy的采样点数
+      vtheta_samples: 20 # theta的采样点数
+      sim_time: 1.7 # 规划多少时间内的轨迹(1.7秒)
+      linear_granularity: 0.05 # 向前投影的线速度的颗粒度
+      angular_granularity: 0.025 # 向前投影的角速度颗粒度
+      transform_tolerance: 0.2 # tf变换容差(s)
       xy_goal_tolerance: 0.25
       trans_stopped_velocity: 0.25
-      short_circuit_trajectory_evaluation: True
+      short_circuit_trajectory_evaluation: True # 找到最佳分数后停止评分
       stateful: True
       critics: ["RotateToGoal", "Oscillation", "BaseObstacle", "GoalAlign", "PathAlign", "PathDist", "GoalDist"]
-      BaseObstacle.scale: 0.02
+      BaseObstacle.scale: 0.02 # BaseObstacle评分者的加权比例
       PathAlign.scale: 32.0
       PathAlign.forward_point_distance: 0.1
-      GoalAlign.scale: 24.0
-      GoalAlign.forward_point_distance: 0.1
+      GoalAlign.scale: 24.0 # 该评分插件的权重
+      GoalAlign.forward_point_distance: 0.1 # 前向点的距离，用于计算角度变化
       PathDist.scale: 32.0
       GoalDist.scale: 24.0
       RotateToGoal.scale: 32.0

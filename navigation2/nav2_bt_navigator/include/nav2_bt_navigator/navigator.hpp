@@ -139,6 +139,7 @@ public:
    * @param odom_smoother Object to get current smoothed robot's speed
    * @return bool If successful
    */
+  // 核心函数：配置导航器，创建行为树动作服务器
   bool on_configure(
     rclcpp_lifecycle::LifecycleNode::WeakPtr parent_node,
     const std::vector<std::string> & plugin_lib_names,
@@ -152,10 +153,11 @@ public:
     feedback_utils_ = feedback_utils;
     plugin_muxer_ = plugin_muxer;
 
-    // get the default behavior tree for this navigator
+    // get the default behavior tree for this navigator 获取默认行为树(xml文件)地址
     std::string default_bt_xml_filename = getDefaultBTFilepath(parent_node);
 
     // Create the Behavior Tree Action Server for this navigator
+    // 为导航器创建行为树动作服务器、加载了默认行为树插件、加载了默认行为树、设置了动作回调函数
     bt_action_server_ = std::make_unique<nav2_behavior_tree::BtActionServer<ActionT>>(
       node,
       getName(),
@@ -170,7 +172,7 @@ public:
     if (!bt_action_server_->on_configure()) {
       ok = false;
     }
-
+    // 获取黑板指针，传入参数
     BT::Blackboard::Ptr blackboard = bt_action_server_->getBlackboard();
     blackboard->set<std::shared_ptr<tf2_ros::Buffer>>("tf_buffer", feedback_utils.tf);  // NOLINT
     blackboard->set<bool>("initial_pose_received", false);  // NOLINT

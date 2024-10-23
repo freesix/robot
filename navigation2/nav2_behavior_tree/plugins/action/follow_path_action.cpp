@@ -34,7 +34,7 @@ void FollowPathAction::on_tick()
   getInput("controller_id", goal_.controller_id);
   getInput("goal_checker_id", goal_.goal_checker_id);
 }
-
+// 相应路径跟踪的变化：路径、控制器、目标检查器
 void FollowPathAction::on_wait_for_result(
   std::shared_ptr<const nav2_msgs::action::FollowPath::Feedback>/*feedback*/)
 {

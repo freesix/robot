@@ -86,7 +86,7 @@ BehaviorServer::on_configure(const rclcpp_lifecycle::State & /*state*/)
     shared_from_this(), costmap_topic);
   footprint_sub_ = std::make_unique<nav2_costmap_2d::FootprintSubscriber>(
     shared_from_this(), footprint_topic, *tf_, robot_base_frame, transform_tolerance);
-
+  // 实例化了一个碰撞检查器
   collision_checker_ = std::make_shared<nav2_costmap_2d::CostmapTopicCollisionChecker>(
     *costmap_sub_, *footprint_sub_, this->get_name());
 

@@ -115,17 +115,7 @@ static void *imu_data_parse_thread_loop(void *var)
 			if(dImuProDataRcvPos < 1)
 				break;
 			
-/* 			pthread_mutex_lock(&mutex);
-			while (turn != 1) {  // 不是线程1的回合时等待
-            	pthread_cond_wait(&cond, &mutex);
-        	}				 */
 			Df = imu_data_parse(gImuParsBuf, dImuProDataRcvPos, &FindOKSaddr, &OKDlen);
-			/* if(RAW_FLAG & PRY_FLAG){
-				turn = 2;  // 设置为线程2执行
-				pthread_cond_signal(&cond);  // 通知线程2
-				RAW_FLAG = PRY_FLAG = false;
-			}
-        	pthread_mutex_unlock(&mutex); */
 			
 			if(Df == END_RETURN)
 			{
@@ -133,6 +123,9 @@ static void *imu_data_parse_thread_loop(void *var)
 			}
 			else if(Df==CLEAR_BUF_RETURN)
 			{	
+				// RCLCPP_INFO(rclcpp::get_logger("imu"), "msg.ax: %f", imudata.accel_x);
+				// RCLCPP_INFO(rclcpp::get_logger("imu"), "msg.ay: %f", imudata.accel_y);
+				// RCLCPP_INFO(rclcpp::get_logger("imu"), "msg.az: %f", imudata.accel_z);
 				publish_imu_data(imudata, rpydata);	
 				Ylen = (unsigned int)(FindOKSaddr - gImuParsBuf);
 				Ylen += OKDlen;
@@ -187,7 +180,7 @@ DisposeFlag imu_data_parse(unsigned char* RData, const unsigned int RLen, unsign
     {
         return END_RETURN;
     }
-    if(FindDispose(RData, RLen, IMU_DATA_CMD_JZ_TAG, SAddr, OKLen) == MIDDLE_RETURN){
+    if(FindDispose(RData, RLen, IMU_DATA_CMD_JZ_TAG, SAddr, OKLen) == MIDDLE_RETURN){  // 二进制格式
         SAddr1 = *SAddr;
         p = *SAddr + *OKLen;
 
@@ -292,31 +285,37 @@ DisposeFlag imu_data_parse(unsigned char* RData, const unsigned int RLen, unsign
 				memset(bImuTmpBuf,0,sizeof(bImuTmpBuf));
                 FindString_token(&p, (unsigned int*)t,  ',',  bImuTmpBuf,  OA_NMEA_STR_LEN);
 				imudata.timeticks = atoi(bImuTmpBuf);
-
+	
 				memset(bImuTmpBuf,0,sizeof(bImuTmpBuf));
 				FindString_token(&p,  (unsigned int*)t,  ',',  bImuTmpBuf,  OA_NMEA_STR_LEN);
 				imudata.gyro_x = atof(bImuTmpBuf);
-
+				// RCLCPP_INFO(rclcpp::get_logger("imu"), "imu.gx: %s", bImuTmpBuf);
+				// RCLCPP_INFO(rclcpp::get_logger("imu"), "msg.gx: %f", imudata.gyro_x);
 				memset(bImuTmpBuf,0,sizeof(bImuTmpBuf));
 				FindString_token(&p,  (unsigned int*)t,  ',',  bImuTmpBuf,  OA_NMEA_STR_LEN);
 				imudata.gyro_y = atof(bImuTmpBuf);
-
+				// RCLCPP_INFO(rclcpp::get_logger("imu"), "imu.gy: %s", bImuTmpBuf);
+				// RCLCPP_INFO(rclcpp::get_logger("imu"), "msg.gy: %f", imudata.gyro_y);
 				memset(bImuTmpBuf,0,sizeof(bImuTmpBuf));
 				FindString_token(&p,  (unsigned int*)t,  ',',  bImuTmpBuf,  OA_NMEA_STR_LEN);
 				imudata.gyro_z = atof(bImuTmpBuf);
-
+				// RCLCPP_INFO(rclcpp::get_logger("imu"), "imu.gz: %s", bImuTmpBuf);
+				// RCLCPP_INFO(rclcpp::get_logger("imu"), "msg.gz: %f", imudata.gyro_z);
 				memset(bImuTmpBuf,0,sizeof(bImuTmpBuf));
 				FindString_token(&p,  (unsigned int*)t,  ',',  bImuTmpBuf,  OA_NMEA_STR_LEN);
 				imudata.accel_x = atof(bImuTmpBuf);
-
+				// RCLCPP_INFO(rclcpp::get_logger("imu"), "imu.ax: %s", bImuTmpBuf);
+				// RCLCPP_INFO(rclcpp::get_logger("imu"), "msg.ax: %f", imudata.accel_x);
 				memset(bImuTmpBuf,0,sizeof(bImuTmpBuf));
 				FindString_token(&p,  (unsigned int*)t,  ',',  bImuTmpBuf,  OA_NMEA_STR_LEN);
 				imudata.accel_y = atof(bImuTmpBuf);
-
+				// RCLCPP_INFO(rclcpp::get_logger("imu"), "imu.ay: %s", bImuTmpBuf);
+				// RCLCPP_INFO(rclcpp::get_logger("imu"), "msg.ay: %f", imudata.accel_y);
 				memset(bImuTmpBuf,0,sizeof(bImuTmpBuf));
 				FindString_token(&p,  (unsigned int*)t,  ',',  bImuTmpBuf,  OA_NMEA_STR_LEN);
 				imudata.accel_z = atof(bImuTmpBuf);
-
+				// RCLCPP_INFO(rclcpp::get_logger("imu"), "imu.az: %s", bImuTmpBuf);
+				// RCLCPP_INFO(rclcpp::get_logger("imu"), "msg.az: %f", imudata.accel_z);
 				memset(bImuTmpBuf,0,sizeof(bImuTmpBuf));
 				FindString_token(&p,  (unsigned int*)t,  ',',  bImuTmpBuf,  OA_NMEA_STR_LEN);
 				imudata.magn_x = atof(bImuTmpBuf);
@@ -489,7 +488,10 @@ void publish_imu_data(serial_imu_interface::msg::RawImu &imudata,
 	imu_msg.orientation.x = rpydata.quaternion_x;
 	imu_msg.orientation.y = rpydata.quaternion_y;
 	imu_msg.orientation.z = rpydata.quaternion_z;
-
+	// RCLCPP_INFO(rclcpp::get_logger("imu"), "gx:%d,   gy:%d,   gz:%d", imu_msg.angular_velocity.x, 
+		// imu_msg.angular_velocity.y, imu_msg.angular_velocity.z);
+	// RCLCPP_INFO(rclcpp::get_logger("imu"), "ax:%d,   ay:%d,   az:%d", imu_msg.linear_acceleration.x,
+		// imu_msg.linear_acceleration.y, imu_msg.linear_acceleration.z); 
 	// 发布IMU消息
 	Imu_Publisher->publish(imu_msg);
 }
