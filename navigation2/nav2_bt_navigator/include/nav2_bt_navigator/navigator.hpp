@@ -166,7 +166,7 @@ public:
       std::bind(&Navigator::onGoalReceived, this, std::placeholders::_1),
       std::bind(&Navigator::onLoop, this),
       std::bind(&Navigator::onPreempt, this, std::placeholders::_1),
-      std::bind(&Navigator::onCompletion, this, std::placeholders::_1, std::placeholders::_2));
+      std::bind(&Navigator::onCompleetion, this, std::placeholders::_1, std::placeholders::_2));
 
     bool ok = true;
     if (!bt_action_server_->on_configure()) {
@@ -247,10 +247,11 @@ public:
 protected:
   /**
    * @brief An intermediate goal reception function to mux navigators.
+   * 多路导航器的中间目标点接收功能
    */
   bool onGoalReceived(typename ActionT::Goal::ConstSharedPtr goal)
   {
-    if (plugin_muxer_->isNavigating()) {
+    if (plugin_muxer_->isNavigating()) { // 正在导航中
       RCLCPP_ERROR(
         logger_,
         "Requested navigation from %s while another navigator is processing,"
@@ -258,7 +259,7 @@ protected:
       return false;
     }
 
-    bool goal_accepted = goalReceived(goal);
+    bool goal_accepted = goalReceived(goal); // 调用子类的目标接收函数，开启导航
 
     if (goal_accepted) {
       plugin_muxer_->startNavigating(getName());

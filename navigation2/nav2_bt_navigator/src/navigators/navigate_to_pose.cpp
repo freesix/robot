@@ -21,7 +21,8 @@
 
 namespace nav2_bt_navigator
 {
-
+// 导航器的配置函数，在父类中有调用
+// 获取黑板、平滑器、订阅目标点
 bool
 NavigateToPoseNavigator::configure(
   rclcpp_lifecycle::LifecycleNode::WeakPtr parent_node,
@@ -33,20 +34,20 @@ NavigateToPoseNavigator::configure(
   if (!node->has_parameter("goal_blackboard_id")) {
     node->declare_parameter("goal_blackboard_id", std::string("goal"));
   }
-
+  // 获取黑板id
   goal_blackboard_id_ = node->get_parameter("goal_blackboard_id").as_string();
 
   if (!node->has_parameter("path_blackboard_id")) {
     node->declare_parameter("path_blackboard_id", std::string("path"));
   }
-
+  // 获取路径的黑板id
   path_blackboard_id_ = node->get_parameter("path_blackboard_id").as_string();
 
-  // Odometry smoother object for getting current speed
+  // Odometry smoother object for getting current speed 里程计平滑器的对象、用于获取当前速度
   odom_smoother_ = odom_smoother;
-
+  // 在自己内部实现一个客户端，用于将topic通过客户端请求到服务端
   self_client_ = rclcpp_action::create_client<ActionT>(node, getName());
-
+  // 订阅目标点
   goal_sub_ = node->create_subscription<geometry_msgs::msg::PoseStamped>(
     "goal_pose",
     rclcpp::SystemDefaultsQoS(),
@@ -82,7 +83,7 @@ NavigateToPoseNavigator::cleanup()
   self_client_.reset();
   return true;
 }
-
+// 接收目标
 bool
 NavigateToPoseNavigator::goalReceived(ActionT::Goal::ConstSharedPtr goal)
 {
@@ -106,22 +107,24 @@ NavigateToPoseNavigator::goalCompleted(
   const nav2_behavior_tree::BtStatus /*final_bt_status*/)
 {
 }
-
+// bt_action_server_服务器的反馈函数
+// 实现了剩余距离的估算
+// 实现了时间估算
 void
 NavigateToPoseNavigator::onLoop()
 {
   // action server feedback (pose, duration of task,
   // number of recoveries, and distance remaining to goal)
   auto feedback_msg = std::make_shared<ActionT::Feedback>();
-
+  // 获取当前位置
   geometry_msgs::msg::PoseStamped current_pose;
   nav2_util::getCurrentPose(
     current_pose, *feedback_utils_.tf,
     feedback_utils_.global_frame, feedback_utils_.robot_frame,
     feedback_utils_.transform_tolerance);
-
+  // 获取黑板
   auto blackboard = bt_action_server_->getBlackboard();
-
+  // 寻找最近路点
   try {
     // Get current path points
     nav_msgs::msg::Path current_path;
@@ -158,7 +161,7 @@ NavigateToPoseNavigator::onLoop()
     // and at least 10cm to go
     if ((std::abs(current_linear_speed) > 0.01) && (distance_remaining > 0.1)) {
       estimated_time_remaining =
-        rclcpp::Duration::from_seconds(distance_remaining / std::abs(current_linear_speed));
+        rclcpp::Duration::from_seconds(distance_remaining / std::abs(current_linear_speed)); // 剩余时间=剩余距离/当前速度(估算)
     }
 
     feedback_msg->distance_remaining = distance_remaining;
@@ -175,7 +178,7 @@ NavigateToPoseNavigator::onLoop()
 
   bt_action_server_->publishFeedback(feedback_msg);
 }
-
+// 请求抢占时的调用(导航过程中收到新的目标)
 void
 NavigateToPoseNavigator::onPreempt(ActionT::Goal::ConstSharedPtr goal)
 {
@@ -229,7 +232,7 @@ NavigateToPoseNavigator::onGoalPoseReceived(const geometry_msgs::msg::PoseStampe
 {
   ActionT::Goal goal;
   goal.pose = *pose;
-  self_client_->async_send_goal(goal);
+  self_client_->async_send_goal(goal); // 发送目标(这里实现的就是将topic中目标点通过客户端请求服务器)
 }
 
 }  // namespace nav2_bt_navigator
