@@ -5,6 +5,7 @@ from launch_ros.actions import Node
 
 def generate_launch_description():
     VOLECITY_TOPIC = LaunchConfiguration('velocity_cmd_topic')
+    ENCODER_TOPIC = LaunchConfiguration('odom_publisher')
     serial_port_name = LaunchConfiguration('serial_port_name')
     serial_baudrate = LaunchConfiguration('serial_baudrate')   
     right_wheel_radius = LaunchConfiguration('right_wheel_radius')    
@@ -16,7 +17,8 @@ def generate_launch_description():
     base_frame_id = LaunchConfiguration('base_frame_id')
 
     VOLECITY_TOPIC_cmd = DeclareLaunchArgument('velocity_cmd_topic', default_value='/cmd_vel')
-    serial_port_name_cmd = DeclareLaunchArgument('serial_port_name', default_value='/dev/ttyUSB1')
+    ENCODER_TOPIC_cmd = DeclareLaunchArgument('odom_publisher', default_value='/odom')
+    serial_port_name_cmd = DeclareLaunchArgument('serial_port_name', default_value='/dev/ttyUSB0')
     serial_baudrate_cmd = DeclareLaunchArgument('serial_baudrate', default_value='19200')   
     right_wheel_radius_cmd = DeclareLaunchArgument('right_wheel_radius', default_value='0.0845')    
     left_wheel_radius_cmd = DeclareLaunchArgument('left_wheel_radius', default_value='0.0845')     
@@ -30,7 +32,8 @@ def generate_launch_description():
         package='motor_drive',
         executable='motor_drive_node',
         parameters=[{
-            'velocity_cmd_topic':VOLECITY_TOPIC,
+            'velocity_cmd_topic':VOLECITY_TOPIC, 
+            'odom_publisher' : ENCODER_TOPIC,
             'serial_port_name':serial_port_name,
             'serial_baudrate':serial_baudrate,
             'right_wheel_radius':right_wheel_radius,
@@ -44,6 +47,7 @@ def generate_launch_description():
 
     return LaunchDescription([
         VOLECITY_TOPIC_cmd,
+        ENCODER_TOPIC_cmd,
         serial_port_name_cmd,
         serial_baudrate_cmd,
         right_wheel_radius_cmd,

@@ -42,10 +42,8 @@ int current_stop_status = -1;
 bool lose_pose = false;
 bool begin_lost_pose_ = false;
 
-rclcpp::Clock ros_clock(RCL_SYSTEM_TIME);
-
-rclcpp::Time current_time = ros_clock.now();
-rclcpp::Time last_time = ros_clock.now();
+rclcpp::Time current_time;
+rclcpp::Time last_time;
 
 tf2::Quaternion odom_quat;
 //the current odom
@@ -274,10 +272,10 @@ nav_msgs::msg::Odometry MotorDrive::decoder(int leftcoder, int rightcoder){
 	if(m_iLeftEncoderReading<0 || m_iRightEncoderReading <0){
 		m_iLeftEncoderReading = leftcoder;
 		m_iRightEncoderReading = rightcoder;
-		last_time = ros_clock.now();
+		last_time = rclcpp::Time(RCL_SYSTEM_TIME);
 	}
 	else{
-		current_time = ros_clock.now();
+		current_time = rclcpp::Time(RCL_SYSTEM_TIME);
 		double dt = (current_time - last_time).nanoseconds() * 1e-9;
 		last_time = current_time;
 
@@ -325,7 +323,7 @@ nav_msgs::msg::Odometry MotorDrive::decoder(int leftcoder, int rightcoder){
 
 		odom_quat.setRPY(0,0,th);
 
-		odom_msg.header.stamp=current_time;
+		// odom_msg.header.stamp=rclcpp::Time(RCL_SYSTEM_TIME);
 		odom_msg.pose.pose.position.x = x;
 		odom_msg.pose.pose.position.y = y;
 		odom_msg.pose.pose.position.z = 0.0;

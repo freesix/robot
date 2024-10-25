@@ -27,7 +27,7 @@ public:
             [this](const geometry_msgs::msg::Twist::SharedPtr msg){motordrive.cmdCallback(msg);});
         // sub_vel = this->create_subscription<geometry_msgs::msg::Twist>("/cmd_vel", 10,
             // std::bind(&MotorNode::cmdCallback, this, std::placeholders::_1));
-        this->declare_parameter<std::string>("odom_publisher", "odom"); 
+        this->declare_parameter<std::string>("odom_publisher", "odom_diff"); 
         ODOM_TOPIC = this->get_parameter("odom_publisher").as_string(); 
         odom_pub = this->create_publisher<nav_msgs::msg::Odometry>(ODOM_TOPIC, 10);
     }
@@ -60,6 +60,7 @@ public:
             if(p>=0){
                 odom_msg = motordrive.decoder(left_encoder, right_encoder);     
             }
+            odom_msg.header.stamp = this->now();
             odom_msg.header.frame_id = odom_link;
             odom_msg.child_frame_id = base_link; 
             

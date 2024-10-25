@@ -26,18 +26,19 @@
     </visual>
   </link>
 
-
+  
   <link name="base_link" />
+
   <joint name="imu_link_joint" type="fixed">
     <parent link="base_link" />
     <child link="imu_link" />
-    <origin xyz="0 0 0" />
+    <origin xyz="0.15 0 0.02" rpy="0 0 0.7854"/>
   </joint>
 
   <joint name="laser_link_joint" type="fixed">
     <parent link="base_link" />
     <child link="laser_link" />
-    <origin xyz="0 0 0" rpy="0 0 0" />
+    <origin xyz="0.15 0 0.0558" rpy="0 0 -0.7854" />
   </joint>
 
-</robot>
+ </robot>
