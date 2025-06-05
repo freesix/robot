@@ -94,7 +94,7 @@ def generate_launch_description():
     )
     declare_scanfreq_cmd = DeclareLaunchArgument(
     'scanfreq',
-    default_value='"30"',
+    default_value='"20"',
     )
     declare_laser_enable_cmd = DeclareLaunchArgument(
     'laser_enable',

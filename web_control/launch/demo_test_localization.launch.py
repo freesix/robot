@@ -11,6 +11,8 @@ def generate_launch_description():
     serial_imu_old_dir = get_package_share_directory('serial_imu_old')
     motor_dir = get_package_share_directory('motor_drive')
     cartographer_ros_dir = get_package_share_directory('cartographer_ros')
+    realsense_dir = get_package_share_directory('realsense2_camera')
+    teleop_joy_dir = get_package_share_directory('teleop_twist_joy')
     return LaunchDescription([
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(os.path.join(
@@ -31,5 +33,13 @@ def generate_launch_description():
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(os.path.join(
                 cartographer_ros_dir, 'launch', 'demo_fd_localization.launch.py'))   
+        ), 
+        IncludeLaunchDescription(
+            PythonLaunchDescriptionSource(os.path.join(
+                realsense_dir, 'launch', 'rs_multi_camera_launch.py'))   
+        ),
+        IncludeLaunchDescription(
+            PythonLaunchDescriptionSource(os.path.join(
+                teleop_joy_dir, 'launch', 'teleop-launch.py'))   
         ), 
     ])
