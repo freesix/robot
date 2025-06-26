@@ -18,6 +18,13 @@
       <origin xyz="0.15 0 0.1" rpy="0 0 0" />
     </joint>
 
+    <link name="imu_link"> </link>
+    <joint name="imu_joint" type="fixed">
+      <parent link="base_link" />
+      <child link="imu_link" />
+      <origin xyz="0.12 -0.05 0.06" rpy="0 0 0" />
+    </joint>
+
     <link name="camera_left_depth_optical_frame"> </link>
     <joint name="camera_left_joint" type="fixed">
       <parent link="base_link" />

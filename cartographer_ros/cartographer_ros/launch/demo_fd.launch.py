@@ -11,6 +11,9 @@ import os
 def generate_launch_description():
     ## ***** Launch arguments *****
     bag_filename_arg = DeclareLaunchArgument('bag_filename')
+    # load_state_filename_arg = DeclareLaunchArgument('load_state_filename',
+        # default_value='/home/ubuntu/2Dslam/src/nav2_bringup/maps/noimu.pbstream')
+
 
   ## ***** File paths ******
     pkg_share = FindPackageShare('cartographer_ros').find('cartographer_ros')
@@ -36,6 +39,8 @@ def generate_launch_description():
         arguments = [
             '-configuration_directory', FindPackageShare('cartographer_ros').find('cartographer_ros') + '/configuration_files',
             '-configuration_basename', 'fd.lua'],
+            # '-load_state_filename', '/home/ubuntu/2Dslam/src/nav2_bringup/maps/noimu.pbstream',
+            # '-load_frozen_state', 'false'],
         remappings = [
             ('scan', '/laser/data'),
             ('imu', '/imu/data')],
@@ -71,5 +76,6 @@ def generate_launch_description():
         cartographer_node,
         cartographer_occupancy_grid_node,
         rviz_node,
+        # load_state_filename_arg
         # ros2_bag_play_cmd
     ])

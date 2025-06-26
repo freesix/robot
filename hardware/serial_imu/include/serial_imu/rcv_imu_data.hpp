@@ -1,6 +1,6 @@
 #pragma once 
 
-#define DEFAULT_UART_DEV				"/dev/ttyUSB0"
+#define DEFAULT_UART_DEV				"/dev/ttyjiuimu"
 #define DEFAULT_UART_BAUDRATE_STR		"460800"
 
 #define THE_UART_MAX_RING_BUFFER_LEN	(1024*4)

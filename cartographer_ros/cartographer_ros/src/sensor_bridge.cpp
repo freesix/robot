@@ -146,6 +146,20 @@ void SensorBridge::HandleImuMessage(const std::string& sensor_id,
                                     const sensor_msgs::msg::Imu::ConstSharedPtr& msg) {
   std::unique_ptr<carto::sensor::ImuData> imu_data = ToImuData(msg);
   if (imu_data != nullptr) {
+/*     const auto imu_to_tracking = tf_bridge_.LookupToTracking(
+      FromRos(msg->header.stamp), CheckNoLeadingSlash(msg->header.frame_id));
+    if(imu_to_tracking == nullptr){
+      return;
+    }
+    const Eigen::Vector3d r = imu_to_tracking->translation();
+    const Eigen::Vector3d omega = imu_data->angular_velocity;
+    const Eigen::Vector3d acc = imu_data->linear_acceleration;
+    const Eigen::Vector3d acc_corrected = acc + omega.cross(omega.cross(r));
+    trajectory_builder_->AddSensorData(
+        sensor_id,
+        carto::sensor::ImuData{imu_data->time, acc_corrected,
+                               imu_data->angular_velocity}); */
+ 
     trajectory_builder_->AddSensorData(
         sensor_id,
         carto::sensor::ImuData{imu_data->time, imu_data->linear_acceleration,

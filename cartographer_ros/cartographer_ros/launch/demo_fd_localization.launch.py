@@ -11,7 +11,7 @@ import os
 def generate_launch_description():
     ## ***** Launch arguments *****
     load_state_filename_arg = DeclareLaunchArgument('load_state_filename',
-        default_value='/home/ubuntu/2Dslam/src/nav2_bringup/maps/test_map.pbstream')
+        default_value='/home/ubuntu/2Dslam/src/nav2_bringup/maps/noimu.pbstream')
 
   ## ***** File paths ******
     pkg_share = FindPackageShare('cartographer_ros').find('cartographer_ros')
