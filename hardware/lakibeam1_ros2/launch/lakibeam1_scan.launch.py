@@ -138,11 +138,11 @@ def generate_launch_description():
 
     ld.add_action(declare_frame_id_cmd)
     ld.add_action(declare_output_topic0_cmd)
-    ld.add_action(declare_output_topic1_cmd)
+    # ld.add_action(declare_output_topic1_cmd)
     ld.add_action(declare_inverted_cmd)
     ld.add_action(declare_hostip_cmd)
     ld.add_action(declare_port0_cmd)
-    ld.add_action(declare_port1_cmd)
+    # ld.add_action(declare_port1_cmd)
     ld.add_action(declare_angle_offset_cmd)
     ld.add_action(declare_filter_cmd)
     ld.add_action(declare_scanfreq_cmd)

@@ -1,7 +1,0 @@
-image: noimu.png
-mode: trinary
-resolution: 0.05
-origin: [-9.91, -7.99, 0]
-negate: 0
-occupied_thresh: 0.55
-free_thresh: 0.45

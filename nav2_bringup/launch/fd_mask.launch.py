@@ -16,7 +16,7 @@ from nav2_common.launch import RewrittenYaml
 def generate_launch_description():
     # Get the launch directory
     # costmap_filters_demo_dir = get_package_share_directory('nav2_costmap_filters_demo')
-
+    bringup_dir = get_package_share_directory('nav2_bringup')
     lifecycle_nodes = ['filter_mask_server', 'costmap_filter_info_server']
 
     # Parameters
@@ -46,10 +46,12 @@ def generate_launch_description():
 
     declare_params_file_cmd = DeclareLaunchArgument(
         'params_file',
+        default_value=os.path.join(bringup_dir, 'params', 'fd_params.yaml'),
         description='Full path to the ROS2 parameters file to use')
 
     declare_mask_yaml_file_cmd = DeclareLaunchArgument(
         'mask',
+        default_value=os.path.join(bringup_dir, 'maps', 'mask.yaml'),
         description='Full path to filter mask yaml file to load')
 
     declare_use_composition_cmd = DeclareLaunchArgument(

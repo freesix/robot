@@ -35,7 +35,7 @@ DEFINE_string(configuration_basename, "",
 DEFINE_string(load_state_filename, "",
               "If non-empty, filename of a .pbstream file to load, containing "
               "a saved SLAM state.");
-DEFINE_bool(load_frozen_state, true,
+DEFINE_bool(load_frozen_state, false,
             "Load the saved state as frozen (non-optimized) trajectories.");
 DEFINE_bool(
     start_trajectory_with_default_topics, true,
@@ -44,11 +44,18 @@ DEFINE_string(
     save_state_filename, "",
     "If non-empty, serialize state and write it to disk before shutting down.");
 
+std::string configuration_basename;
 namespace cartographer_ros {
 namespace {
 
 void Run() {
   rclcpp::Node::SharedPtr cartographer_node = rclcpp::Node::make_shared("cartographer_node");
+  cartographer_node->declare_parameter("configuration_basename", "");
+  cartographer_node->declare_parameter("load_state_filename", "");
+  cartographer_node->declare_parameter("load_frozen_state", false);
+  auto load_state_filename = cartographer_node->get_parameter("load_state_filename").as_string();
+  auto load_frozen_state = cartographer_node->get_parameter("load_frozen_state").as_bool();
+  configuration_basename = cartographer_node->get_parameter("configuration_basename").as_string();
   constexpr double kTfBufferCacheTimeInSeconds = 10.; // 常量，且在编译时计算出值
   // 创建一个tf2_ros::Buffer的指针对象，缓存tf数据，缓存时间段为10秒
   std::shared_ptr<tf2_ros::Buffer> tf_buffer =
@@ -62,8 +69,10 @@ void Run() {
   // 解析配置，分别放到node_options和trajectory_options中
   NodeOptions node_options;
   TrajectoryOptions trajectory_options;
+  CHECK(!configuration_basename.empty())
+      << "-configuration_basename is missing."; // 检查配置文件
   std::tie(node_options, trajectory_options) =  // std::tie只接受元组返回
-      LoadOptions(FLAGS_configuration_directory, FLAGS_configuration_basename);
+      LoadOptions(FLAGS_configuration_directory, configuration_basename);
   // 初始化建图接口
   auto map_builder =
     cartographer::mapping::CreateMapBuilder(node_options.map_builder_options);
@@ -72,8 +81,8 @@ void Run() {
     node_options, std::move(map_builder), tf_buffer, cartographer_node,
     FLAGS_collect_metrics);
   // 加载序列化文件.pdstream中的slam状态，具体是那些需要看代码
-  if (!FLAGS_load_state_filename.empty()) {
-    node->LoadState(FLAGS_load_state_filename, FLAGS_load_frozen_state);
+  if (!load_state_filename.empty()) {
+    node->LoadState(load_state_filename, load_frozen_state);
   }
   // 使用默认topic开始轨迹生成
   if (FLAGS_start_trajectory_with_default_topics) {
@@ -105,8 +114,8 @@ int main(int argc, char** argv) {
 
   CHECK(!FLAGS_configuration_directory.empty())
       << "-configuration_directory is missing."; // 检查配置文件夹是否存在
-  CHECK(!FLAGS_configuration_basename.empty())
-      << "-configuration_basename is missing."; // 检查配置文件
+  // CHECK(!configuration_basename.empty())
+      // << "-configuration_basename is missing."; // 检查配置文件
 
   cartographer_ros::ScopedRosLogSink ros_log_sink; // 将glog的日志重定向到ros日志系统中
   cartographer_ros::Run();

@@ -29,7 +29,7 @@ public:
 	{
 		declare_parameters();
 		get_parameters();
-		scan_pub = create_publisher<sensor_msgs::msg::LaserScan>(output_topic, 1000);
+		scan_pub = create_publisher<sensor_msgs::msg::LaserScan>(output_topic, 10);
 		info();
 		// scan_config();
 		create_socket();
@@ -186,6 +186,8 @@ protected:
 				sensor_msgs::msg::LaserScan scan;
 				uint16_t num_readings;
 				float duration = (scan_begin - scan_end).seconds();
+				// RCLCPP_INFO_STREAM(this->get_logger(), "duration: " << duration);
+				// RCLCPP_INFO_STREAM(this->get_logger(), "begin: "<<std::fixed<<scan_begin.seconds()<<" end: "<<scan_end.seconds());
 
 				num_readings = scan_vec.size();
 				scan.header.stamp = scan_begin;
@@ -212,8 +214,7 @@ protected:
 						scan.ranges[num_readings - i - 1] = (float)scan_vec[i].dist / 1000;
 						scan.intensities[num_readings - i - 1] = scan_vec[i].rssi;
 					}
-				}
-
+				}				
 				scan_pub->publish(scan);
 				// RCLCPP_INFO(get_logger(), "New topic %s published, total data points: %d", output_topic.c_str(), num_readings);
 				scan_vec.clear();

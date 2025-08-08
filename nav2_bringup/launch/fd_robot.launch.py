@@ -54,13 +54,13 @@ def generate_launch_description():
     declare_map_yaml_cmd = DeclareLaunchArgument(
         'map',
         default_value=os.path.join(
-            bringup_dir, 'maps', 'noimu.yaml'),
+            bringup_dir, 'maps', 'map.yaml'),
         description='Full path to map file to load')
 
     declare_mask_yaml_file_cmd = DeclareLaunchArgument(
         'mask',
         default_value=os.path.join(
-            bringup_dir, 'maps', 'noimu_mask.yaml'),
+            bringup_dir, 'maps', 'mask.yaml'),
         description='Full path to filter mask yaml file to load')
     
     declare_use_sim_time_cmd = DeclareLaunchArgument(
@@ -186,6 +186,6 @@ def generate_launch_description():
     # ld.add_action(start_robot_state_publisher_cmd)
     ld.add_action(rviz_cmd)
     ld.add_action(bringup_cmd)
-    ld.add_action(mask_cmd)
+    # ld.add_action(mask_cmd)
 
     return ld

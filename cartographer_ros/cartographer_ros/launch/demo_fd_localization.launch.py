@@ -11,7 +11,7 @@ import os
 def generate_launch_description():
     ## ***** Launch arguments *****
     load_state_filename_arg = DeclareLaunchArgument('load_state_filename',
-        default_value='/home/ubuntu/2Dslam/src/nav2_bringup/maps/noimu.pbstream')
+        default_value='/home/ubuntu/2Dslam/src/nav2_bringup/maps/map.pbstream')
 
   ## ***** File paths ******
     pkg_share = FindPackageShare('cartographer_ros').find('cartographer_ros')
@@ -33,15 +33,28 @@ def generate_launch_description():
     cartographer_node = Node(
         package = 'cartographer_ros',
         executable = 'cartographer_node',
-        parameters = [{'use_sim_time': False}],
+        parameters = [{'use_sim_time': False},
+                      {'configuration_basename': 'fd_localization.lua'},
+                      {'load_state_filename': LaunchConfiguration('load_state_filename')}],
         arguments = [
-            '-configuration_directory', FindPackageShare('cartographer_ros').find('cartographer_ros') + '/configuration_files',
-            '-configuration_basename', 'fd_localization.lua',
-            '-load_state_filename', LaunchConfiguration('load_state_filename')],
+            '-configuration_directory', FindPackageShare('cartographer_ros').find('cartographer_ros') + '/configuration_files'],
+            # '-configuration_basename', 'fd_localization.lua',
+            # '-load_state_filename', LaunchConfiguration('load_state_filename')],
         remappings = [
             ('scan', '/laser/data'),
             ('imu', '/imu/data')],
         output = 'screen'
+    )
+    
+    cartographer_occupancy_grid_node = Node(
+        package = 'cartographer_ros',
+        executable = 'cartographer_occupancy_grid_node',
+        parameters = [
+            {'use_sim_time': False},
+            {'occupancy_grid_topic': 'hidden_map'}],
+        arguments=[
+            # '-occupancy_grid_topic', 'hidden_map'
+            ],
         )
 
     return LaunchDescription([
@@ -50,4 +63,5 @@ def generate_launch_description():
         # Nodes
         robot_state_publisher_node,
         cartographer_node,
+        cartographer_occupancy_grid_node
     ])

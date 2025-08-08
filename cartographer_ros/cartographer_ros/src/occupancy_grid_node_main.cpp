@@ -101,9 +101,10 @@ Node::Node(const double resolution, const double publish_period_sec)
 #endif
         callback_group_
         );
-
+  this->declare_parameter("occupancy_grid_topic", cartographer_ros::kOccupancyGridTopic);
+  auto occupancy_grid_topic = this->get_parameter("occupancy_grid_topic").as_string();
   occupancy_grid_publisher_ = this->create_publisher<::nav_msgs::msg::OccupancyGrid>(
-      kOccupancyGridTopic, rclcpp::QoS(10).transient_local());
+      occupancy_grid_topic, rclcpp::QoS(10).transient_local());
 
   occupancy_grid_publisher_timer_ = this->create_wall_timer(
     std::chrono::milliseconds(int(publish_period_sec * 1000)),

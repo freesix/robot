@@ -15,7 +15,7 @@
   <joint name="lidar_joint" type="fixed">
     <parent link="base_link" />
     <child link="laser_link" />
-    <origin xyz="0.15 0 0.1" rpy="0 0 0" />
+    <origin xyz="0.17 0 0.22" rpy="0 0 0" />
   </joint>
 
   <link name="imu_link"> </link>
@@ -29,16 +29,26 @@
   <joint name="camera_left_joint" type="fixed">
     <parent link="base_link" />
     <child link="camera_left_depth_optical_frame" />
-    <origin xyz="0.266842719249179 0.0881830869392123 0.0807512430601606" 
-            rpy="-2.00712863979348 0 -1.13446401379631" />
+    <!-- <origin xyz="0.256842719249179 0.1081830869392123 0.1607512430601606"  -->
+            <!-- rpy="-2.00712863979348 0 -1.13446401379631" /> -->
+    <!-- <origin xyz="0.25032 0.13367 0.07824"
+            rpy="-1.2043 0 -0.7854" /> -->
+    <origin xyz="0.25032 0.13367 0.07824"
+            rpy="-1.5708 0 -1.134" />
+
   </joint> 
 
   <link name="camera_right_depth_optical_frame"> </link>
     <joint name="camera_right_joint" type="fixed">
       <parent link="base_link" />
       <child link="camera_right_depth_optical_frame" />
-      <origin xyz="0.287973632336214 -0.0428676975873733 0.0807512430601605" 
-              rpy="-2.00712863979348 0 -2.00712863979348" />
+      <!-- <origin xyz="0.277973632336214 -0.0628676975873733 0.1607512430601605"  -->
+              <!-- rpy="-2.00712863979348 0 -2.00712863979348" /> -->
+      <!-- <origin xyz="0.28567 -0.098316 0.07824"
+              rpy="-1.2043 0 -2.3562" /> -->
+      <origin xyz="0.28567 -0.098316 0.07824"
+              rpy="-1.5708 0 -2.06" />
+
     </joint> 
 
    

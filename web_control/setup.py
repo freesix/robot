@@ -14,6 +14,7 @@ setup(
         (os.path.join('share', package_name, 'launch'), ['launch/demo_test.launch.py']),
         (os.path.join('share', package_name, 'launch'), ['launch/demo_test_localization.launch.py']),
         (os.path.join('share', package_name, 'launch'), ['launch/set_initpose.launch.py']),
+        (os.path.join('share', package_name, 'launch'), ['launch/common.launch.py']),
         (os.path.join('share', package_name, 'launch'), ['launch/last_pose.json']),
     ],
     install_requires=['setuptools'],

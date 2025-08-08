@@ -12,9 +12,9 @@ def generate_launch_description():
     right_pub = LaunchConfiguration('right_pub')
 
     left_sub_cmd = DeclareLaunchArgument('left_sub', default_value='/camera_left/depth/color/points')
-    left_pub_cmd = DeclareLaunchArgument('left_pub', default_value='/low_obs_left')
+    left_pub_cmd = DeclareLaunchArgument('left_pub', default_value='/camera_left/depth/points')
     right_sub_cmd = DeclareLaunchArgument('right_sub', default_value='/camera_right/depth/color/points')
-    right_pub_cmd = DeclareLaunchArgument('right_pub', default_value='/low_obs_right')
+    right_pub_cmd = DeclareLaunchArgument('right_pub', default_value='/camera_right/depth/points')
 
     left_node = Node(
         package='cameraseg',

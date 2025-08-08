@@ -16,7 +16,7 @@ def generate_launch_description():
             output='screen',
             parameters=[
                 {'configuration_directory': FindPackageShare('cartographer_ros').find('cartographer_ros') + '/configuration_files'},
-                {'configuration_basename': 'fd_localization.lua'},
+                {'configuration_basename': 'fd.lua'},
                 {'json_file': os.path.join(web_control_dir, 'launch', 'last_pose.json')}, 
             ]
         )

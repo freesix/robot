@@ -35,8 +35,10 @@ import rs_launch
 
 local_parameters = [{'name': 'camera_name1', 'default': 'camera_left', 'description': 'camera1 unique name'},
                     {'name': 'camera_name2', 'default': 'camera_right', 'description': 'camera2 unique name'},
-                    {'name': 'serial_no1', 'default': '"242972350119"', 'description': 'camera2 unique name'},
-                    {'name': 'serial_no2', 'default': '"242972350108"', 'description': 'camera2 unique name'}, 
+                    {'name': 'serial_no2', 'default': '"242972350119"', 'description': 'camera2 unique name'},
+                    {'name': 'serial_no1', 'default': '"242972350108"', 'description': 'camera2 unique name'},
+                    {'name': 'clip_distance1', 'default': '2.0', 'description': 'dictance'},
+                    {'name': 'clip_distance2', 'default': '2.0', 'description': 'dictance'}, 
                     ]
 
 def set_configurable_parameters(local_params):

@@ -30,10 +30,10 @@ def generate_launch_description():
             # PythonLaunchDescriptionSource(os.path.join(
                 # serial_imu_old_dir, 'launch', 'serial_imu_old.launch.py'))
         # ),
-        IncludeLaunchDescription(
-            PythonLaunchDescriptionSource(os.path.join(
-                zfy_imu_dir, 'launch', 'zyf176.launch.py'))    
-        ),
+        # IncludeLaunchDescription(
+            # PythonLaunchDescriptionSource(os.path.join(
+                # zfy_imu_dir, 'launch', 'zyf176.launch.py'))    
+        # ),
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(os.path.join(
                 motor_dir, 'launch', 'robot_motor_base.launch.py')) 
@@ -42,18 +42,18 @@ def generate_launch_description():
             PythonLaunchDescriptionSource(os.path.join(
                 cartographer_ros_dir, 'launch', 'demo_fd_localization.launch.py'))   
         ),
-        IncludeLaunchDescription(
-            PythonLaunchDescriptionSource(os.path.join(
-                realsense_dir, 'launch', 'rs_multi_camera_launch.py'))   
-        ),
+        # IncludeLaunchDescription(
+            # PythonLaunchDescriptionSource(os.path.join(
+                # realsense_dir, 'launch', 'rs_multi_camera_launch.py'))   
+        # ),
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(os.path.join(
                 teleop_joy_dir, 'launch', 'teleop-launch.py'))   
         ),
-        IncludeLaunchDescription(
-            PythonLaunchDescriptionSource(os.path.join(
-                cameraseg_dir, 'launch', 'cameraseg.launch.py'))    
-        ),
+        # IncludeLaunchDescription(
+            # PythonLaunchDescriptionSource(os.path.join(
+                # cameraseg_dir, 'launch', 'cameraseg.launch.py'))    
+        # ),
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(os.path.join(
                 web_control_dir, 'launch', 'set_initpose.launch.py'))     

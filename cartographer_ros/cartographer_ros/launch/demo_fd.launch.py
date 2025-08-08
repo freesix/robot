@@ -35,11 +35,15 @@ def generate_launch_description():
     cartographer_node = Node(
         package = 'cartographer_ros',
         executable = 'cartographer_node',
-        parameters = [{'use_sim_time': False}],
+        parameters = [{'use_sim_time': False},
+                      {'configuration_directory': FindPackageShare('cartographer_ros').find('cartographer_ros') + '/configuration_files'},
+                      {'configuration_basename': 'fd.lua'},
+                    #   {'load_state_filename': '/home/ubuntu/2Dslam/src/nav2_bringup/maps/map.pbstream'},
+                      {'load_frozen_state': False}],
         arguments = [
             '-configuration_directory', FindPackageShare('cartographer_ros').find('cartographer_ros') + '/configuration_files',
             '-configuration_basename', 'fd.lua'],
-            # '-load_state_filename', '/home/ubuntu/2Dslam/src/nav2_bringup/maps/noimu.pbstream',
+            # '-load_state_filename', '/home/ubuntu/2Dslam/src/nav2_bringup/maps/map.pbstream',
             # '-load_frozen_state', 'false'],
         remappings = [
             ('scan', '/laser/data'),

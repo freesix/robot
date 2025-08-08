@@ -40,22 +40,26 @@ class InitialPose(Node):
 
         if os.path.exists(self.json_file):
             pose_msg = PoseWithCovarianceStamped() 
-            with open(self.json_file, 'r') as f:
-                pose = json.load(f)
-                pose_msg.pose.pose.position.x = pose.get('x', 0.0)
-                pose_msg.pose.pose.position.y = pose.get('y', 0.0)
-                pose_msg.pose.pose.position.z = pose.get('z', 0.0)
-                pose_msg.pose.pose.orientation.x = pose.get('qx', 0.0)
-                pose_msg.pose.pose.orientation.y = pose.get('qy', 0.0)
-                pose_msg.pose.pose.orientation.z = pose.get('qz', 0.0)
-                pose_msg.pose.pose.orientation.w = pose.get('qw', 1.0)
-                pose_msg.pose.covariance = [0.0] * 36
-                pose_msg.header.stamp = self.get_clock().now().to_msg()
-                pose_msg.header.frame_id = 'map'
+            try:
+                with open(self.json_file, 'r') as f:
+                    pose = json.load(f)
+                    pose_msg.pose.pose.position.x = pose.get('x', 0.0)
+                    pose_msg.pose.pose.position.y = pose.get('y', 0.0)
+                    pose_msg.pose.pose.position.z = pose.get('z', 0.0)
+                    pose_msg.pose.pose.orientation.x = pose.get('qx', 0.0)
+                    pose_msg.pose.pose.orientation.y = pose.get('qy', 0.0)
+                    pose_msg.pose.pose.orientation.z = pose.get('qz', 0.0)
+                    pose_msg.pose.pose.orientation.w = pose.get('qw', 1.0)
+                    pose_msg.pose.covariance = [0.0] * 36
+                    pose_msg.header.stamp = self.get_clock().now().to_msg()
+                    pose_msg.header.frame_id = 'map'
+            except Exception:
+                self.get_logger().warn('last pose file read some error.')
+                pass
             self.pubpose.publish(pose_msg)
             self.get_clock().sleep_for(Duration(seconds=1))
         else:
-            self.get_logger().info('No last pose file exisit, create one')               
+            self.get_logger().info('No last pose file exisit, create one.')               
             
         self.timer = self.create_timer(0.2, self.timer_callback)
 
