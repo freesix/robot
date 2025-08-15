@@ -1,0 +1,10 @@
+# goal
+string map_path
+string map_name
+float32 resolution 
+---
+# result
+bool ret
+---
+# feedback
+int16 status

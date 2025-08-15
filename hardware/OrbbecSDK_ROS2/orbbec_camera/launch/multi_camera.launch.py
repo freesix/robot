@@ -16,8 +16,8 @@ def generate_launch_description():
         ),
         launch_arguments={
             'camera_name': 'camera_left',
-            'usb_port': '1-2.1.5.4',
-            'device_num': '11',
+            'usb_port': '1-2.1.4.4',
+            'device_num': '10',
             # 'serial_number': 'AUCL712049P',
             'sync_mode': 'standalone'
         }.items()
@@ -28,12 +28,12 @@ def generate_launch_description():
         actions = [
             IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(
-                    os.path.join(launch_file_dir, 'dabai_pro.launch.py')
+                    os.path.join(launch_file_dir, 'dabai_dcw2.launch.py')
                 ),
                 launch_arguments={
                     'camera_name': 'camera_right',
-                    'usb_port': '1-2.1.4.4',
-                    'device_num': '10',
+                    'usb_port': '1-2.1.5.1',
+                    'device_num': '11',
                     # 'serial_number': 'AUCL7120529',
                     'sync_mode': 'standalone'
                 }.items()    

@@ -55,9 +55,9 @@ def generate_launch_description():
         DeclareLaunchArgument('use_hardware_time', default_value='false'),
         DeclareLaunchArgument('align_mode', default_value='HW'),
         DeclareLaunchArgument('laser_energy_level', default_value='-1'),
-        DeclareLaunchArgument('enable_threshold_filter', default_value='true'),
-        DeclareLaunchArgument('threshold_filter_max', default_value='2.0'),
-        DeclareLaunchArgument('threshold_filter_max', default_value='-1.0'),
+        # DeclareLaunchArgument('enable_threshold_filter', default_value='true'),
+        # DeclareLaunchArgument('threshold_filter_max', default_value='2.0'),
+        # DeclareLaunchArgument('threshold_filter_max', default_value='-1.0'),
     ]
 
     # Node configuration

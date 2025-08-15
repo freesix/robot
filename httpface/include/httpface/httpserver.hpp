@@ -15,6 +15,11 @@
 #include <nav_msgs/msg/occupancy_grid.hpp>
 #include <nav_msgs/msg/path.hpp>
 #include <nlohmann/json.hpp>
+#include <ament_index_cpp/get_package_share_directory.hpp>
+#include <web_control_msgs/action/map_save.hpp>
+#include <web_control_msgs/srv/run_control.hpp>
+#include <filesystem>
+#include <regex>
 
 class HttpServer : public rclcpp::Node{
 public:
@@ -53,6 +58,14 @@ private:
     rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr path_sub_;
     std::mutex path_mutex_;
     nlohmann::json path_json_;
+
+    rclcpp_action::Client<web_control_msgs::action::MapSave>::SharedPtr map_client_;
+    std::mutex map_save_mutex_;
+    int map_save_status_ = -1;
+
+    std::string nav2_bringup_dir_;
+
+    rclcpp::Client<web_control_msgs::srv::RunControl>::SharedPtr run_client_; 
     
     void NavstatusCallback(const action_msgs::msg::GoalStatusArray::SharedPtr msg){
         std::lock_guard<std::mutex> lock(status_mutex_);
@@ -95,6 +108,7 @@ private:
     void pathCallback(const nav_msgs::msg::Path::SharedPtr msg){
         std::lock_guard<std::mutex> lock(path_mutex_);
         // nlohmann::json path_json;
+        path_json_.clear();
         for(const auto& pose : msg->poses){
             path_json_["x"].push_back(pose.pose.position.x);
             path_json_["y"].push_back(pose.pose.position.y);
@@ -107,7 +121,6 @@ private:
         }
 
         // path_json_ = path_json;
-
     }
 };
 

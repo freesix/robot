@@ -1,0 +1,6 @@
+image: /home/ubuntu/2Dslam/install/nav2_bringup/share/nav2_bringup/maps/map1.pgm
+resolution: 0.050000
+origin: [-25.321027, -12.322714, 0.0]
+negate: 0
+occupied_thresh: 0.55
+free_thresh: 0.49

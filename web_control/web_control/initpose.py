@@ -147,9 +147,9 @@ class InitialPose(Node):
         try:
             res = future.result()
             if res.status.code == 0:
-                self.get_logger().info(f"✅ New trajectory started: ID = {res.trajectory_id}")
+                self.get_logger().info(f"New trajectory started: ID = {res.trajectory_id}")
             else:
-                self.get_logger().error(f"❌ Failed to start trajectory: {res.status.message}")
+                self.get_logger().error(f"Failed to start trajectory: {res.status.message}")
         except Exception as e:
             self.get_logger().error(f"Exception when starting trajectory: {e}")
 

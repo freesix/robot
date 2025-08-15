@@ -27,6 +27,8 @@ setup(
     entry_points={
         'console_scripts': [
             'initial_pose = web_control.initpose:main',
+            'map_manager = web_control.mapmanager:main',
+            'run = web_control.run:main'
         ],
     },
 )
