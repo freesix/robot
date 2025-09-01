@@ -12,34 +12,29 @@ def generate_launch_description():
     launch_file_dir = os.path.join(package_dir, 'launch')
     launch1_include = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
-            os.path.join(launch_file_dir, 'dabai_pro.launch.py')
+            os.path.join(launch_file_dir, 'dabai_dw2.launch.py')
         ),
         launch_arguments={
             'camera_name': 'camera_left',
-            'usb_port': '1-2.1.4.4',
+            # 'usb_port': '1-2.1.4.4',
             'device_num': '10',
-            # 'serial_number': 'AUCL712049P',
+            'serial_number': 'CH7G654002V',
             'sync_mode': 'standalone'
         }.items()
     )
 
-    launch2_include = TimerAction(
-        period = 3.0,
-        actions = [
-            IncludeLaunchDescription(
-                PythonLaunchDescriptionSource(
-                    os.path.join(launch_file_dir, 'dabai_dcw2.launch.py')
-                ),
-                launch_arguments={
-                    'camera_name': 'camera_right',
-                    'usb_port': '1-2.1.5.1',
-                    'device_num': '11',
-                    # 'serial_number': 'AUCL7120529',
-                    'sync_mode': 'standalone'
-                }.items()    
-            )     
-        ]
-    )
+    launch2_include = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+                os.path.join(launch_file_dir, 'dabai_dw2.launch.py')
+            ),
+            launch_arguments={
+                'camera_name': 'camera_right',
+                # 'usb_port': '1-2.1.5.1',
+                'device_num': '11',
+                'serial_number': 'CH7G65400KB',
+                'sync_mode': 'standalone'
+            }.items()    
+        )     
 
     # If you need more cameras, just add more launch_include here, and change the usb_port and device_num
 

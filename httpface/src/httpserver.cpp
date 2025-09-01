@@ -2,6 +2,12 @@
 
 using GoalHandleNavigateToPose = rclcpp_action::ClientGoalHandle<nav2_msgs::action::NavigateToPose>;
 
+void set_cors_headers(httplib::Response& res) {
+    res.set_header("Access-Control-Allow-Origin", "*");
+    res.set_header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+    res.set_header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+}
+
 HttpServer::HttpServer(int port) : Node("http_server"), port_(port){
     svr_ = std::make_unique<httplib::Server>();
     cmd_pub_ = this->create_publisher<geometry_msgs::msg::Twist>("cmd_vel", 10);
@@ -18,6 +24,18 @@ HttpServer::HttpServer(int port) : Node("http_server"), port_(port){
     nav2_bringup_dir_ = ament_index_cpp::get_package_share_directory("nav2_bringup");
     map_client_ = rclcpp_action::create_client<web_control_msgs::action::MapSave>(this, "save_map");
     run_client_ = this->create_client<web_control_msgs::srv::RunControl>("run_control");
+
+    svr_->set_pre_routing_handler([](const httplib::Request& req, httplib::Response& res) {
+        if(req.method != "OPTIONS"){
+            set_cors_headers(res);
+        }
+        return httplib::Server::HandlerResponse::Unhandled;  // 继续走路由
+    });
+    // 处理 OPTIONS 预检请求（CORS 必须）
+    svr_->Options(R"(.*)", [](const httplib::Request& /*req*/, httplib::Response& res) {
+        set_cors_headers(res);
+        res.status = 200;
+    });
 
     start(port_);
 };
@@ -71,9 +89,27 @@ void HttpServer::setup_routes(){
     svr_->Get("/hi", [](const httplib::Request&, httplib::Response& res) {
         res.set_content("Hello World!", "text/plain");
     });
-    svr_->Post("/move", [this](const httplib::Request &req, httplib::Response &res){
+    svr_->Post("/rockMove", [this](const httplib::Request &req, httplib::Response &res){
         try{
             auto json = nlohmann::json::parse(req.body);
+            if(!json.contains("linear") || !json.contains("angular")){
+                res.status = 400;
+                nlohmann::json response_json = {
+                    {"status", 0}, 
+                    {"message", "Missing a key or key is incorrect."}
+                };
+                res.set_content(response_json.dump(), "application/json"); 
+                return;
+            }
+            if(!json["linear"].is_number() || !json["angular"].is_number()){
+                res.status = 400;
+                nlohmann::json response_json = {
+                    {"status", 0}, 
+                    {"message", "The value must be a number."}
+                };
+                res.set_content(response_json.dump(), "application/json"); 
+                return;
+            }
             double linear = json["linear"];
             double angular = json["angular"];
 
@@ -84,25 +120,168 @@ void HttpServer::setup_routes(){
             cmd_pub_->publish(twist);
             RCLCPP_INFO(this->get_logger(), "Executed move command: linear=%.2f, angular=%.2f", linear, angular);
 
-            nlohmann::json response_json = {{"status", "OK"}, {"linear", linear}, {"angular", angular}};
+            if(!stop_timer_){
+                stop_timer_ = this->create_wall_timer(
+                    std::chrono::milliseconds(200),
+                    [this](){
+                        geometry_msgs::msg::Twist stop_twist;
+                        stop_twist.linear.x = 0.0;
+                        stop_twist.angular.z = 0.0;
+                        cmd_pub_->publish(stop_twist);
+                        if(stop_timer_){
+                            stop_timer_->cancel();
+                            stop_timer_->reset();
+                        }
+                    }
+                );
+            }
+            else{
+                stop_timer_->reset();
+            }
+                                
+            nlohmann::json response_json = {
+                {"status", 1}, 
+                {"message", "linear=" + std::to_string(linear) + ", angular="+ std::to_string(angular)}};
             res.set_content(response_json.dump(), "application/json"); 
         }
         catch(const std::exception &e){
             res.status = 400;
-            nlohmann::json error_json = {{"error", "Invalid JSON or missing 'linear' or 'angular' field"}};
+            nlohmann::json error_json = {
+                {"status", 0},
+                {"message", "Invalid JSON or missing 'linear' or 'angular' field"}};
             res.set_content(error_json.dump(), "application/json");
         }
     });
 
-    svr_->Get("/nav_status", [this](const httplib::Request&, httplib::Response& res) {
+    svr_->Post("/moveManual", [this](const httplib::Request &req, httplib::Response &res){
+        auto json = nlohmann::json::parse(req.body);
+        if(json.contains("direction")){
+            geometry_msgs::msg::Twist twist;
+            std::lock_guard<std::mutex> lock(cmd_mutex_);
+            if(json["direction"] == 0){
+                twist.linear.x = linear_;
+                twist.angular.z = 0.0;
+            }
+            else if(json["direction"] == 1){
+                twist.linear.x = -linear_;
+                twist.angular.z = 0.0;
+            }
+            else if(json["direction"] == 2){
+                twist.linear.x = 0.0;
+                twist.angular.z = angular_;
+            }
+            else if(json["direction"] == 3){
+                twist.linear.x = 0.0;
+                twist.angular.z = -angular_;
+            }
+            else{
+                res.status = 400;
+                nlohmann::json error_json = {{"status", 0}, {"message", "direction num is invalid"}};
+                res.set_content(error_json.dump(), "application/json");
+                return;
+            }
+
+            cmd_pub_->publish(twist);
+            RCLCPP_INFO(this->get_logger(), "Executed move command: linear=%.2f, angular=%.2f", linear_, angular_);
+
+            if(!stop_timer_){
+                stop_timer_ = this->create_wall_timer(
+                    std::chrono::milliseconds(duration_),
+                    [this](){
+                        geometry_msgs::msg::Twist stop_twist;
+                        stop_twist.linear.x = 0.0;
+                        stop_twist.angular.z = 0.0;
+                        cmd_pub_->publish(stop_twist);
+                        if(stop_timer_){
+                            stop_timer_->cancel();
+                            stop_timer_->reset();
+                        }
+                    }
+                );
+            }
+            else{
+                stop_timer_->reset();
+            }
+
+            nlohmann::json response_json = {
+                {"status", 1}, 
+                {"message", "linear" + std::to_string(linear_) +", angular" + std::to_string(angular_)}};
+            res.set_content(response_json.dump(), "application/json"); 
+        
+        }
+        else{
+            res.status = 400;
+            nlohmann::json error_json = {{"status", 0}, {"message", "Invalid JSON or missing 'key' "}};
+            res.set_content(error_json.dump(), "application/json");
+        }
+    });
+
+    svr_->Post("/setSpeed", [this](const httplib::Request& req, httplib::Response& res){
+        nlohmann::json ret_json;
+        try{
+            auto json = nlohmann::json::parse(req.body);
+            bool has_max_vel = json.contains("trans_vel");
+            bool has_max_rot = json.contains("rot_vel");
+            bool has_duration = json.contains("duration");
+            if(!has_max_vel && !has_max_rot && !has_duration){
+                ret_json = {
+                    {"status", 0},
+                    {"message", "Missing required fields."}
+                };
+                res.status = 400;
+                res.set_content(ret_json.dump(), "application/json");
+                return; 
+            }
+            std::lock_guard<std::mutex> lock(cmd_mutex_);
+            if(has_max_vel){
+                if(!json["trans_vel"].is_number()){
+                    ret_json = {
+                        {"status", 0},
+                        {"message", "max_trans_vel must be a number."}
+                    };
+                };
+                linear_ = json["trans_vel"]; 
+            }
+            if(has_max_rot){
+                if(!json["rot_vel"].is_number()){
+                    ret_json = {
+                        {"status", 0},
+                        {"message", "max_rot_vel must be a number."}
+                    };
+                }
+                angular_ = json["rot_vel"];
+            }
+            if(has_duration){
+                if(!json["duration"].is_number()){
+                    ret_json = {
+                        {"status", 0},
+                        {"message", "duration must be a number."}
+                    };
+                }
+            }
+
+            ret_json = {
+                        {"status", 1},
+                        {"message", "Completion of setup parameters."}
+            };
+            res.set_content(ret_json.dump(), "application/json");
+        }
+        catch(const std::exception &e){
+            res.status = 400;
+            nlohmann::json error_json = {{"status", 0}, {"message", "Invalid JSON or missing 'key' "}};
+            res.set_content(error_json.dump(), "application/json");
+        }
+    });
+
+    svr_->Get("/navStatus", [this](const httplib::Request&, httplib::Response& res) {
         std::lock_guard<std::mutex> lock(status_mutex_);
-        res.set_content(current_status_, "application/json");
+        res.set_content(current_status_.dump(), "application/json");
     });
     
-    svr_->Get("/robot_pose", [this](const httplib::Request&, httplib::Response& res) {
+    svr_->Get("/getCoordinate", [this](const httplib::Request&, httplib::Response& res) {
         geometry_msgs::msg::PoseStamped pose;
         bool ok = getRobotPose(pose);
-
+        nlohmann::json ret_json;
         if(ok){ 
             tf2::Quaternion q(
                 pose.pose.orientation.x,
@@ -112,23 +291,42 @@ void HttpServer::setup_routes(){
             double roll, pitch, yaw;
             tf2::Matrix3x3(q).getRPY(roll, pitch, yaw);
 
-            std::stringstream ss;
-            ss << "{"
-               << "\"x\": " << pose.pose.position.x << ", "
-               << "\"y\": " << pose.pose.position.y << ", "
-               << "\"yaw\": " << yaw
-               << "}";
-
-            res.set_content(ss.str(), "application/json");
+            ret_json = {
+                {"status", 1},
+                {"x", pose.pose.position.x},
+                {"y", pose.pose.position.y},
+                {"yaw", yaw}
+            };
+            res.set_content(ret_json.dump(), "application/json");
         }else{
             res.status = 500;
-            res.set_content("{\"error\": \"Failed to get robot pose\"}", "application/json");
+            nlohmann::json error_json = {{"status", 0}, {"message", "Failed to get robot pose"}};
+            res.set_content(error_json.dump(), "application/json");
         }
     });
     
-    svr_->Post("/send_goal", [this](const httplib::Request& req, httplib::Response& res) {
+    svr_->Post("/sendGoal", [this](const httplib::Request& req, httplib::Response& res) {
         // try{
             auto json = nlohmann::json::parse(req.body);
+            nlohmann::json ret_json;
+            if(!json.contains("x") && !json.contains("y") && !json.contains("yaw")){
+                res.status = 400;
+                ret_json = {
+                    {"status", 0},
+                    {"message", "Missing required fields."}
+                };
+                res.set_content(ret_json.dump(), "application/json");
+                return;
+            }
+            if(!json["x"].is_number() || !json["y"].is_number() || !json["yaw"].is_number()){
+                res.status = 400;
+                ret_json = {
+                    {"status", 0},
+                    {"message", "The value must be a number."}
+                };
+                res.set_content(ret_json.dump(), "application/json");
+                return;
+            }
             double x = json["x"];
             double y = json["y"];
             double yaw = json["yaw"];
@@ -147,24 +345,36 @@ void HttpServer::setup_routes(){
             goal.pose = target_pose;
 
             if(!toPose_client_->wait_for_action_server(std::chrono::seconds(2))){
-                // res.status = 503;
-                // res.set_content("{\"error\":\"Server not available\"}", "application/json");
+                res.status = 503;
+                ret_json = {
+                    {"status", 0},
+                    {"message", "Wait for the action server was timeout."}
+                };
+                res.set_content(ret_json.dump(), "application/json");
                 return;
             }
 
             auto future_goal_handle = toPose_client_->async_send_goal(goal);
             if(rclcpp::spin_until_future_complete(this->get_node_base_interface(), future_goal_handle)!=
                 rclcpp::FutureReturnCode::SUCCESS)
-            {
-                // res.status = 500;
-                // res.set_content("{\"error\":\"Failed to send goal\"}", "application/json");
+            {   
+                res.status = 500;
+                ret_json = {
+                    {"status", 0},
+                    {"message", "Client failed to send target."}
+                };
+                res.set_content(ret_json.dump(), "application/json");
                 return;
             }
 
             auto goal_handle = future_goal_handle.get();
             if (!goal_handle) {
-                // res.status = 500;
-                // res.set_content("{\"error\":\"Goal rejected by server\"}", "application/json");
+                res.status = 500;
+                ret_json = {
+                    {"status", 0},
+                    {"message", "Failed to get handle for getting result."}
+                };
+                res.set_content(ret_json.dump(), "application/json");
                 return;
             }
 
@@ -174,7 +384,12 @@ void HttpServer::setup_routes(){
             }
 
             std::string uuid_str = oss.str();
-            res.set_content("{\"goal_id\":\"" + uuid_str + "\"}", "application/json");
+            ret_json = {
+                {"status", 1},
+                {"message", "Send the nav goal successful."},
+                {"goal_id", uuid_str}
+            };
+            res.set_content(ret_json.dump(), "application/json");
         // }catch(const std::exception &e){
             // res.status = 400;
             // res.set_content(std::string("{\"error\":\"") + e.what() + "\"}", "application/json");
@@ -182,14 +397,18 @@ void HttpServer::setup_routes(){
     });
 
     svr_->Get("/map", [this](const httplib::Request&, httplib::Response &res){
+        nlohmann::json j;
         std::lock_guard<std::mutex> lock(map_mutex_);
         if(!latest_map_){
-            // res.status = 503;
-            // res.set_content("{\"error\": \"No map received yet\"}", "application/json");
+            res.status = 503;
+            j = {
+                {"status", 0},
+                {"message", "No map received yet, please try again."}
+            };
+            res.set_content(j.dump(), "application/json");
             return;
         }
         
-        nlohmann::json j;
         const auto &msg = *latest_map_;
 
         j["header"]["frame_id"] = msg.header.frame_id;
@@ -205,8 +424,9 @@ void HttpServer::setup_routes(){
         j["info"]["origin"]["orientation"]["w"] = msg.info.origin.orientation.w;
 
         j["data"] = msg.data;
-
-        res.set_content(j.dump(), "application/json");
+        j["status"] = 1;
+        j["message"] = "ok";
+       res.set_content(j.dump(), "application/json");
     });
 
     svr_->Get("/path", [this](const httplib::Request&, httplib::Response& res) {
@@ -214,11 +434,11 @@ void HttpServer::setup_routes(){
         res.set_content(path_json_.dump(2), "application/json");
     });
 
-    svr_->Post("/map_save", [this](const httplib::Request& req, httplib::Response &res){
+    svr_->Post("/mapSave", [this](const httplib::Request& req, httplib::Response &res){
         auto goal = web_control_msgs::action::MapSave::Goal();
         map_save_status_ = -1;
-        goal.map_path = nav2_bringup_dir_ + "/maps/map1.pbstream";
-        goal.map_name = nav2_bringup_dir_ + "/maps/map1";
+        goal.map_path = nav2_bringup_dir_ + "/maps/map.pbstream";
+        goal.map_name = nav2_bringup_dir_ + "/maps/map";
         goal.resolution = 0.05f;
         if(!req.body.empty()){
             try{
@@ -228,20 +448,27 @@ void HttpServer::setup_routes(){
                 if(json.contains("resolution"))goal.resolution = json["resolution"].get<float>();
             }
             catch(std::exception &e){
-                // res.status = 400;
-                // res.set_content(
-                    // nlohmann::json({{"error", "Invalid JSON"}, {"what", e.what()}}).dump(),
-                    // "application/json"
-                // );
+                res.status = 400;
+                res.set_content(
+                    nlohmann::json({
+                        {"status", 0}, 
+                        {"message", e.what()},
+                        {"save_status", map_save_status_}}).dump(),
+                    "application/json"
+                );
                 RCLCPP_INFO_STREAM(this->get_logger(), e.what());
                 return;
             }
         }
         if(!map_client_->wait_for_action_server(std::chrono::seconds(10))){
             std::lock_guard<std::mutex> lock(map_save_mutex_);
-            // res.status = 503;
+            res.status = 503;
             map_save_status_ = 0;
-            // res.set_content("{\"status\":" + std::to_string(map_save_status_) + "}", "application/json");
+            res.set_content(nlohmann::json({
+                {"status", 0},
+                {"message", "Wait for action server timeout."},
+                {"save_status", map_save_status_}
+            }).dump(), "application/json");
             return;
         }
 
@@ -277,6 +504,11 @@ void HttpServer::setup_routes(){
         if (!goal_handle) {
             map_save_status_ = 0;
             // res.set_content("{\"status\":0}", "application/json");
+            res.set_content(nlohmann::json({
+                {"status", 0},
+                {"message", "Failed to get handle."},
+                {"save_status", map_save_status_}
+            }).dump(), "application/json");
             return;
         }
 
@@ -297,22 +529,28 @@ void HttpServer::setup_routes(){
             }
 
             nlohmann::json resp_json;
-            resp_json["status"] = map_save_status_;
+            resp_json["save_status"] = map_save_status_;
+            resp_json["status"] = 1;
+            resp_json["message"] = "Map save to" + nav2_bringup_dir_ + "maps";
             res.set_content(resp_json.dump(), "application/json");
         }           
     });
 
-    svr_->Get("/map_save_status", [this](const httplib::Request&, httplib::Response &res){
+    svr_->Get("/mapSaveStatus", [this](const httplib::Request&, httplib::Response &res){
         std::lock_guard<std::mutex> lock(map_save_mutex_);
-        res.set_content("{\"status\":" + std::to_string(map_save_status_) + "}", "application/json"); 
+        res.set_content(nlohmann::json({
+            {"status", 1},
+            {"message", "Get the map save status"},
+            {"save_status", map_save_status_}
+            }).dump(), "application/json");
     });
 
-    svr_->Get("/clear_map", [this](const httplib::Request&, httplib::Response &res){
+    svr_->Get("/clearMap", [this](const httplib::Request&, httplib::Response &res){
         std::filesystem::path dir = nav2_bringup_dir_ + "/maps";
-        std::regex pattern(R"(map1\..*)");
+        std::regex pattern(R"(map\..*)");
         nlohmann::json resp_json;
         if(!std::filesystem::exists(dir)){
-            resp_json["status"] = -1;
+            resp_json["status"] = 0;
             resp_json["messages"] = "Directory not found";
             res.set_content(resp_json.dump(), "application/json");
             return;
@@ -327,7 +565,7 @@ void HttpServer::setup_routes(){
                         resp_json["messages"][filename] = "deleted";
                     } catch (const std::filesystem::filesystem_error& e) {
                         resp_json["messages"][filename] = std::string("failed: ") + e.what();
-                        resp_json["status"] = -2;
+                        resp_json["status"] = 0;
                         res.set_content(resp_json.dump(), "application/json");
                         return;
                     }
@@ -336,17 +574,36 @@ void HttpServer::setup_routes(){
         }
 
         resp_json["status"] = 1;  // 总体状态
+        resp_json["message"] = "ok";
         res.set_content(resp_json.dump(), "application/json");
 
     });
 
     svr_->Post("/run", [this](const httplib::Request& req, httplib::Response &res){
         nlohmann::json req_json = nlohmann::json::parse(req.body);
+        nlohmann::json res_json;
+        if(!req_json.contains("data")){
+            res.status = 400;
+            res_json = {
+                {"status", 0},
+                {"message", "Wrong json, no 'data' key."}
+            };
+            res.set_content(res_json.dump(), "application/json");
+            return;
+        }
+        if(!req_json["data"].is_number()){
+            res.status = 400;
+            res_json = {
+                {"status", 0},
+                {"message", "The 'data' value must be a number"}
+            };
+            res.set_content(res_json.dump(), "application/json");
+            return;            
+        }
         int32_t data_value = req_json.at("data");
         auto request = std::make_shared<web_control_msgs::srv::RunControl::Request>();
         request->data = data_value;
-        nlohmann::json res_json;
-        res_json["status"] = -1;
+        res_json["status"] = 0;
         if(!run_client_->wait_for_service(std::chrono::seconds(2))){
             res_json["messages"] = "error: internal service is not ready.";
             res.set_content(res_json.dump(), "application/json"); 
@@ -360,7 +617,8 @@ void HttpServer::setup_routes(){
             return;
         }
         auto response = future.get();
-        res_json["status"] = response->result;
+        res_json["status"] = 1;
+        res_json["run_status"] = response->result;
         res_json["messages"] = response->messages;
         res.set_content(res_json.dump(), "application/json"); 
     });

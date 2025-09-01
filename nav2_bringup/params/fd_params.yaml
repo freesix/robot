@@ -37,6 +37,9 @@ bt_navigator:
       - nav2_goal_updater_node_bt_node
       - nav2_recovery_node_bt_node
       - nav2_pipeline_sequence_bt_node
+      # - nav2_three_cobblers_bt_node
+      - nav2_collision_recovery_bt_node
+      - nav2_pub_costmap_trigger_bt_node
       - nav2_round_robin_node_bt_node
       - nav2_transform_available_condition_bt_node
       - nav2_time_expired_condition_bt_node
@@ -45,6 +48,7 @@ bt_navigator:
       - nav2_single_trigger_bt_node
       - nav2_goal_updated_controller_bt_node
       - nav2_is_battery_low_condition_bt_node
+      # - nav2_is_collision_condition_bt_node
       - nav2_navigate_through_poses_action_bt_node
       - nav2_navigate_to_pose_action_bt_node
       - nav2_remove_passed_goals_action_bt_node
@@ -59,14 +63,15 @@ bt_navigator:
       - nav2_assisted_teleop_cancel_bt_node
       - nav2_drive_on_heading_cancel_bt_node
       - nav2_is_battery_charging_condition_bt_node
+      - nav2_collision_back_action_bt_node
 
-bt_navigator_navigate_through_poses_rclcpp_node:
-  ros__parameters:
-    use_sim_time: False
+# bt_navigator_navigate_through_poses_rclcpp_node:
+  # ros__parameters:
+    # use_sim_time: False
 
-bt_navigator_navigate_to_pose_rclcpp_node:
-  ros__parameters:
-    use_sim_time: False
+# bt_navigator_navigate_to_pose_rclcpp_node:
+  # ros__parameters:
+    # use_sim_time: False
 
 
 controller_server:
@@ -178,18 +183,27 @@ local_costmap:
       width: 6 # 局部地图大小
       height: 6
       resolution: 0.05 # 分辨率
-      robot_radius: 0.28 # 机器人半径，这个会更小相比于全局地图的来说
+      robot_radius: 0.30 # 机器人半径，这个会更小相比于全局地图的来说
       # plugins: ["voxel_layer", "inflation_layer"]
-      plugins: ["obstacle_layer", "inflation_layer"]
+      plugins: ["obstacle_layer", "collision_obs", "inflation_layer"]
       filters: ["keepout_filter"]
       keepout_filter:
         plugin: "nav2_costmap_2d::KeepoutFilter"
         enabled: True
         filter_info_topic: "/costmap_filter_info"
+      collision_obs:
+        plugin: "nav2_costmap_2d::CollisionLayer"
+        enabled: True
+        topic: "/costmap_trigger"
+        frame_id: "base_link"
+        front_offset: 0.9
+        size_x: 0.05
+        size_y: 0.6
+        leave_distance: 1.5 
       inflation_layer: # 膨胀层
         plugin: "nav2_costmap_2d::InflationLayer" # 膨胀层插件
         cost_scaling_factor: 3.0 # 膨胀层权重分布的因子
-        inflation_radius: 0.29 # 膨胀半径
+        inflation_radius: 0.31 # 膨胀半径
 
       obstacle_layer:  # 障碍物层
         plugin: "nav2_costmap_2d::ObstacleLayer" # 障碍物层插件
@@ -295,10 +309,10 @@ global_costmap:
       global_frame: map      # 全局地图坐标系名称
       robot_base_frame: base_link # 机器人本体坐标系名称
       use_sim_time: False # 是否使用仿真时间，在真机时设为false
-      robot_radius: 0.28 # 机器人半径
+      robot_radius: 0.30 # 机器人半径
       resolution: 0.05 # 地图分辨率，一般和slam建的图保持一致
       track_unknown_space: true
-      plugins: ["static_layer", "obstacle_layer", "inflation_layer"] # 插件，采用了哪些地图层
+      plugins: ["static_layer", "obstacle_layer", "collision_obs", "inflation_layer"] # 插件，采用了哪些地图层
       filters: ["keepout_filter"]
       keepout_filter:
         plugin: "nav2_costmap_2d::KeepoutFilter"
@@ -349,10 +363,19 @@ global_costmap:
       static_layer: # 静态地图层
         plugin: "nav2_costmap_2d::StaticLayer" # 静态地图层插件
         map_subscribe_transient_local: True
+      collision_obs:
+        plugin: "nav2_costmap_2d::CollisionLayer"
+        enabled: True
+        topic: "/costmap_trigger"
+        frame_id: "base_link"
+        front_offset: 0.9
+        size_x: 0.05
+        size_y: 0.6
+        leave_distance: 1.5 
       inflation_layer: # 膨胀层，它的实现是直接操纵在静态地图层上的，没有独立地图层
         plugin: "nav2_costmap_2d::InflationLayer" # 膨胀层插件
         cost_scaling_factor: 3.0 # 膨胀因子，控制膨胀层权重衰减因子
-        inflation_radius: 0.29 # 膨胀层半径
+        inflation_radius: 0.31 # 膨胀层半径
       always_send_full_costmap: True # 是否发送整张地图
 
 map_server:
@@ -429,17 +452,23 @@ behavior_server:
     costmap_topic: local_costmap/costmap_raw
     footprint_topic: local_costmap/published_footprint
     cycle_frequency: 10.0
-    behavior_plugins: ["spin", "backup", "drive_on_heading", "assisted_teleop", "wait"]
+    behavior_plugins: ["spin", "backup", "drive_on_heading", "assisted_teleop", "wait", "collision_back"]
     spin:
       plugin: "nav2_behaviors/Spin"
     backup:
       plugin: "nav2_behaviors/BackUp"
+      acceleration_limit: 0.5
+      deceleration_limit: -0.5
     drive_on_heading:
       plugin: "nav2_behaviors/DriveOnHeading"
+      acceleration_limit: 0.5
+      deceleration_limit: -0.5
     wait:
       plugin: "nav2_behaviors/Wait"
     assisted_teleop:
       plugin: "nav2_behaviors/AssistedTeleop"
+    collision_back:
+      plugin: "nav2_behaviors/CollisionBack"
     global_frame: map
     robot_base_frame: base_link
     transform_tolerance: 0.1
@@ -472,8 +501,8 @@ velocity_smoother:
     feedback: "OPEN_LOOP"
     max_velocity: [0.5, 0.0, 1.0]
     min_velocity: [-0.26, 0.0, -1.0]
-    max_accel: [2.5, 0.0, 3.2]
-    max_decel: [-2.5, 0.0, -3.2]
+    max_accel: [1.5, 0.0, 1.5]
+    max_decel: [-1.5, 0.0, -1.5]
     odom_topic: /odom
     odom_duration: 0.1
     deadband_velocity: [0.0, 0.0, 0.0]

@@ -1,5 +1,5 @@
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, ExecuteProcess
+from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, ExecuteProcess, SetEnvironmentVariable
 from launch.conditions import IfCondition, UnlessCondition
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node, SetRemap
@@ -12,7 +12,7 @@ def generate_launch_description():
     ## ***** Launch arguments *****
     load_state_filename_arg = DeclareLaunchArgument('load_state_filename',
         default_value='/home/ubuntu/2Dslam/src/nav2_bringup/maps/map.pbstream')
-
+    set_log_level = SetEnvironmentVariable('GLOG_minloglevel', '2')
   ## ***** File paths ******
     pkg_share = FindPackageShare('cartographer_ros').find('cartographer_ros')
     urdf_dir = os.path.join(pkg_share, 'urdf')
@@ -40,6 +40,7 @@ def generate_launch_description():
             '-configuration_directory', FindPackageShare('cartographer_ros').find('cartographer_ros') + '/configuration_files'],
             # '-configuration_basename', 'fd_localization.lua',
             # '-load_state_filename', LaunchConfiguration('load_state_filename')],
+        ros_arguments=['--log-level', 'error']
         remappings = [
             ('scan', '/laser/data'),
             ('imu', '/imu/data')],
@@ -63,5 +64,6 @@ def generate_launch_description():
         # Nodes
         robot_state_publisher_node,
         cartographer_node,
-        cartographer_occupancy_grid_node
+        cartographer_occupancy_grid_node,
+        set_log_level
     ])

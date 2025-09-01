@@ -9,7 +9,7 @@
 #include <action_msgs/msg/goal_status_array.hpp>
 #include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_listener.h>
-#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #include <mutex>
 #include <future>
 #include <nav_msgs/msg/occupancy_grid.hpp>
@@ -41,10 +41,16 @@ private:
     void setup_routes();
     int port_;
     rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr cmd_pub_;
+    rclcpp::TimerBase::SharedPtr stop_timer_;
+    double linear_ = 0.5;
+    double angular_ = 0.5;
+    int duration_ = 500;
+    std::mutex cmd_mutex_;
 
     rclcpp::Subscription<action_msgs::msg::GoalStatusArray>::SharedPtr goal_status_sub_;
     std::mutex status_mutex_;
-    std::string current_status_ = R"({"status":-1})";
+    // std::string current_status_ = R"({"status":-1})";
+    nlohmann::json current_status_;
 
     std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
     std::shared_ptr<tf2_ros::TransformListener> tf_listener_;
@@ -71,8 +77,18 @@ private:
         std::lock_guard<std::mutex> lock(status_mutex_);
         if(!msg->status_list.empty()){
             const auto& latest = msg->status_list.back();
-            current_status_ = R"({"goal_id":")" + uuidToStr(latest.goal_info.goal_id.uuid) +
-                        R"(","status":)" + std::to_string(latest.status) + "}";
+            current_status_ = {
+                {"goal_id", uuidToStr(latest.goal_info.goal_id.uuid)},
+                {"status:", 1},
+                {"data", latest.status},
+                {"message", "ok"}
+            };
+        }
+        else{
+            current_status_ = {
+                {"status:", 0},
+                {"message", "Failed to get nav status."}
+            };
         } 
     }
 
@@ -86,8 +102,10 @@ private:
 
     bool getRobotPose(geometry_msgs::msg::PoseStamped & pose){
         try{
+            auto now = this->get_clock()->now();
             geometry_msgs::msg::TransformStamped transformStamped = 
-                tf_buffer_->lookupTransform("map", "base_link", tf2::TimePointZero);
+                tf_buffer_->lookupTransform("map", "base_link", now,
+                                            rclcpp::Duration::from_seconds(0.1));
             pose.header = transformStamped.header;
             pose.pose.position.x = transformStamped.transform.translation.x;
             pose.pose.position.y = transformStamped.transform.translation.y;
@@ -119,6 +137,8 @@ private:
                 {"z", pose.pose.position.z}
             });  */
         }
+        path_json_["status"] = 1;
+        path_json_["message"] = "ok";
 
         // path_json_ = path_json;
     }

@@ -14,7 +14,7 @@ def generate_launch_description():
     args = [
         DeclareLaunchArgument('camera_name', default_value='camera'),
         DeclareLaunchArgument('serial_number', default_value=''),
-        DeclareLaunchArgument('usb_port', default_value='1-2.1.5.1'),
+        DeclareLaunchArgument('usb_port', default_value=''),
         DeclareLaunchArgument('device_num', default_value='1'),
         DeclareLaunchArgument('vendor_id', default_value='0x2bc5'),
         DeclareLaunchArgument('product_id', default_value=''),

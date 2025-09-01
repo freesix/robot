@@ -110,6 +110,7 @@ int main(int argc, char** argv) {
 
   google::AllowCommandLineReparsing(); // 允许程序在运行时重新解析命令行参数
   google::InitGoogleLogging(argv[0]); // 初始化glog
+  FLAGS_minloglevel = google::GLOG_ERROR;
   google::ParseCommandLineFlags(&argc, &argv, false); // 解析gflags的标志命令
 
   CHECK(!FLAGS_configuration_directory.empty())
